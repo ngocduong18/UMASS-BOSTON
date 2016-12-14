@@ -1,0 +1,214 @@
+﻿iframe{
+    border:0;
+    position: absolute;
+    width: 57%;
+}
+
+body {
+    color: #000000;
+    font: 0.87em/1.35 "Segoe UI","Lucida Grande",Verdana,Arial,Helvetica,sans-serif;
+}
+
+body {
+    font-size: 12px;
+    margin: 0 auto;
+    max-width: 1220px;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+div#body {
+	margin: 0px; padding-top: 19px;
+}
+
+div#leftNav {
+    border-right: 1px solid #B6B6B6;
+    margin: 0 -1px 0 0;
+}
+
+div#leftNav {
+    float: left;
+    margin: 0 28px 0 0;
+    min-height: 10px;
+    position: relative;
+    width: 300px;
+}
+
+.toclevel0:first-child {
+    margin-top: 16px;
+}
+
+div#leftNav a:link,
+div#leftNav a:visited,
+div#leftNav a:hover {
+    color: #1364C4;
+    text-decoration: none;
+    display:block;
+    font-size: 1.0803em;
+}
+
+div#content {
+    margin: 0;
+    padding-left: 20px;
+}
+
+div#content {
+    min-height: 300px;
+    margin-left:240px ;
+}
+
+#ux-header {
+	padding: 16px 0px 0px; color: rgb(149, 149, 149); line-height: 1.538; clear: right; font-family: "Segoe UI","Lucida Grande",Verdana,Arial,Helvetica,sans-serif; font-size: 0.81em; position: relative; z-index: 9998;
+}
+
+#ux-header .ux-mtps-internav {
+	font: 14px/normal "Segoe UI", "Lucida Grande", Verdana, Arial, Helvetica, sans-serif; margin: 0px; padding: 1px 0px 12px; clear: both; border-bottom-color: rgb(204, 204, 204); border-bottom-width: 1px; border-bottom-style: solid; font-size-adjust: none; font-stretch: normal;
+}
+
+#ux-header .ux-mtps-internav a {
+	background: rgb(255, 255, 255); margin: 0px 14px 0px 0px; padding: 0px; color: rgb(149, 149, 149); float: none;
+}
+
+#ux-header .ux-mtps-internav a:link {
+	background: rgb(255, 255, 255); margin: 0px 14px 0px 0px; padding: 0px; color: rgb(149, 149, 149); float: none;
+}
+
+#ux-header .ux-mtps-internav a:visited {
+	background: rgb(255, 255, 255); margin: 0px 14px 0px 0px; padding: 0px; color: rgb(149, 149, 149); float: none;
+}
+
+#ux-header .ux-mtps-internav a.active {
+	background: 0px; color: rgb(49, 49, 49); font-weight: 500;
+}
+
+#ux-header .ux-mtps-internav a.active:hover {
+	background: 0px; color: rgb(49, 49, 49); font-weight: 500;
+}
+
+#ux-header .ux-mtps-internav a.active:visited {
+	background: 0px; color: rgb(49, 49, 49); font-weight: 500;
+}
+
+#ux-header .ux-mtps-internav a.active:focus {
+	background: 0px; color: rgb(49, 49, 49); font-weight: 500;
+}
+
+#ux-header .ux-mtps-internav a:hover {
+	background: 0px; color: rgb(0, 0, 0);
+}
+
+#ux-header .ux-mtps-internav a:focus {
+	background: 0px; color: rgb(0, 0, 0);
+}
+
+#ux-header .ux-mtps-internav a:first-child {
+	margin-left: 0px;
+}
+
+#ux-header .ux-mtps-internav a:first-child:link {
+	margin-left: 0px;
+}
+
+#ux-header .ux-mtps-internav a:first-child:visited {
+	margin-left: 0px;
+}
+
+#ux-header a,
+#ux-header a:link {
+    cursor: pointer;
+    text-decoration: none;
+    color: #959595;
+}
+
+#ux-header a:hover,
+#ux-header a:link:hover {
+    background: none repeat scroll 0 center transparent;
+    color: #000000;
+}
+
+#ux-header .SearchBox {
+    border: 0 none currentcolor;
+    display: inline-block;
+    float: right;
+    height: 24px;
+    margin-top: -5px;
+    padding: 0 0 0 19px;
+    width: 229px;
+}
+
+#ux-header #HeaderSearchTextBox {
+    background-color: #DEDFE1;
+    color: #A1A1A1 !important;
+    font-family: "Segoe UI","Lucida Grande",Verdana,Arial,Helvetica,sans-serif;
+    font-style: normal !important;
+    padding: 3px 0 4px 7px;
+    width: 186px;
+}
+
+#ux-header.FF #HeaderSearchTextBox {
+    height: 19px;
+}
+
+#ux-header #HeaderSearchForm input {
+    border: 0 none currentcolor;
+    float: left;
+    margin: 0;
+}
+
+#ux-header.FF #HeaderSearchButton {
+    height: 26px;
+    width: 32px;
+}
+
+#ux-header #HeaderSearchForm button {
+    border: 0 none currentcolor;
+    float: left;
+    margin: 0;
+}
+
+#ux-header #HeaderSearchButton {
+    background: url("http://msdn.microsoft.com/Areas/Epx/Themes/Msdn/Content/search.png") no-repeat scroll 8px center #5C626A;
+    border-width: 0;
+    cursor: pointer;
+    display: inline-block;
+    float: right;
+    height: 25px;
+    margin: 0;
+    overflow: hidden;
+    padding: 0;
+    position: relative;
+    text-align: right;
+    vertical-align: top;
+    width: 32px;
+}
+
+#ux-header h1.title {
+    font-size: 2.2em;
+    margin: 0;
+    padding: 0;
+}
+
+h1.title {
+    color: #000000;
+    font-family: "Segoe UI","Lucida Grande",Verdana,Arial,Helvetica,sans-serif;
+    font-size: 2.76em;
+    font-weight: normal;
+}
+
+h1.title img {
+    vertical-align:top;
+    margin-top:4px;
+    margin-right:10px;
+}
+
+.TocTreeView_0 {
+    margin-left: 5px;
+}
+
+#TocTreeView td {
+    vertical-align: top;
+}
+
+#TocTreeView table {
+    margin-top: 5px;
+}

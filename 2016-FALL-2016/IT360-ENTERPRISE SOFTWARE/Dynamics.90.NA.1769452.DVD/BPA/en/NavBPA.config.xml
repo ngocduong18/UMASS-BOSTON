@@ -1,0 +1,998 @@
+<ObjectCollector xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <!--  ** Input file for the Microsoft Dynamics NAV Server Best Practices Analyzer Tool (NAVBPA) **   -->
+  <!--  *********************************************************************    -->
+  <!--   Copyright (C) 2013 Microsoft Corporation. All Rights Reserved.     -->
+  <!--  *********************************************************************    -->
+  <!--  NAVBPA DEPENDENCIES:
+	+ .NET Framework 3.5 installed on server where NAVBPA is being run
+	+ Server or Web Server components for Dynamics NAV 2016 installed on server where NAVBPA is being run
+	+ If Active Directory is used (Windows 2008 or higher), permissions for enumerating Active Directory information and calling the WMI providers on DC/GC servers
+	+ Member of Local Administrators group
+	+ Member of Local Administrators group, on machine where SQL Server is running
+
+	SUPPORTED ENVIRONMENTS:
+		
+		Dynamics NAV 2016 Server on Windows 2008 or higher
+	-->
+
+  <Configuration ConfigVersion="6.1.0.0" ConfigName="NavBPA Configuration File" ArticleURL="http://go.microsoft.com/fwlink/?LinkId=279025" HelpFile="NavBPA.chm">
+    <ObjectProcessor Name="Group" Assembly="BPA.Common.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Common.GroupObjectProcessor"/>
+    <ObjectProcessor Name="Cache" Assembly="BPA.Common.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Common.CacheObjectProcessor"/>
+    <ObjectProcessor Name="Resolve" Assembly="BPA.Common.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Common.ResolveObjectProcessor"/>
+    <ObjectProcessor Name="Directory" Assembly="BPA.ConfigCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.DirectoryObjectProcessor"/>
+    <ObjectProcessor Name="WMI" Assembly="BPA.ConfigCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.WMIObjectProcessor"/>
+    <ObjectProcessor Name="SQL" Assembly="BPA.ConfigCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.SQLObjectProcessor"/>
+    <ObjectProcessor Name="Registry" Assembly="BPA.ConfigCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.RegistryObjectProcessor"/>
+    <ObjectProcessor Name="File" Assembly="BPA.ConfigCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.FileObjectProcessor"/>
+    <ObjectProcessor Name="DsGet" Assembly="BPA.ConfigCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.DsGetObjectProcessor"/>
+    <ObjectProcessor Name="Engine" Assembly="BPA.Common.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Common.EngineObjectProcessor"/>
+    <ObjectProcessor Name="LookupAccount" Assembly="BPA.ConfigCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.LookupAccountObjectProcessor"/>
+    <ObjectProcessor Name="GetUserNameEx" Assembly="BPA.ConfigCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.GetUserNameExObjectProcessor"/>
+    <ObjectProcessor Name="GetComputerNameEx" Assembly="BPA.ConfigCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.GetComputerNameExObjectProcessor"/>
+    <ObjectProcessor Name="CheckTokenMembership" Assembly="BPA.ConfigCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.CheckTokenMembershipObjectProcessor"/>
+    <ObjectProcessor Name="Protocol" Assembly="BPA.NetworkCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.ProtocolObjectProcessor"/>
+    <ObjectProcessor Name="Port" Assembly="BPA.NetworkCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.PortObjectProcessor"/>
+    <ObjectProcessor Name="Routing" Assembly="BPA.NetworkCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.RoutingObjectProcessor"/>
+    <ObjectProcessor Name="DNS" Assembly="BPA.NetworkCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.DNSObjectProcessor"/>
+    <ObjectProcessor Name="If" Assembly="BPA.Common.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Common.IfObjectProcessor"/>
+    <ObjectProcessor Name="Xml" Assembly="BPA.ConfigCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.XmlObjectProcessor"/>
+    <ObjectProcessor Name="Command" Assembly="BPA.ConfigCollector.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Extensions.CommandLineObjectProcessor"/>
+    <RuleProcessor Name="1" Assembly="BPA.Common.dll" Class="Microsoft.WindowsServerSystem.BestPracticesAnalyzer.Common.MainRuleProcessor"/>
+
+    <!-- Substitutions used to handle other server instances than the default one -->
+    <Substitution Name="Server Instance Name">DynamicsNAV90</Substitution>
+    <Substitution Name="Web Server Instance Name">DynamicsNAV90</Substitution>
+
+    <!-- Restrictions and substitutions used for environment validation for SSO -->
+    <RestrictionType Name="SsoValidation" Display="Would you like to verify that the environment is configured for Single Sign-on with Office 365?" Collapse="False">
+      <Option Name="noCheckSso" Display="No" Description="Does not perform SSO Validation" Cost="0,0"/>
+      <Option Name="checkSso" Display="Yes" Description="Performs SSO Validation" Cost="10,0"/>
+    </RestrictionType>
+    <Substitution Name="Dynamics NAV Tenant" Restriction="SsoValidation">default</Substitution>
+    <Substitution Name="Office 365 User Account Email" Restriction="SsoValidation">[Email Address]</Substitution>
+  </Configuration>
+
+  <Object Type="Group" Name="Best Practices Analyzer for Microsoft Dynamics NAV 2016">
+   
+    <Object Type="Group" Name="General information about this computer">
+      <Object Type="Engine">
+        <Setting Key1="ExecutionDirectory" Substitution="CurrentBPADirectory"/>
+        <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="CurrentBPADirectory" Key3="%CurrentBPADirectory%"/>
+        <Setting Key1="EnvironmentVariable" Key2="windir" Substitution="WinDir"/>
+        <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="WinDir" Key3="%WinDir%"/>
+      </Object>
+      <Object Type="If" Key1="'%Server Instance Name%' != ''">
+        <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="ValidateServer" Key3="1"/>
+      </Object>
+      <Object Type="If" Key1="'%Web Server Instance Name%' != ''">
+        <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="ValidateWebServer" Key3="1"/>
+      </Object>
+    </Object>
+
+    
+    <Object Type="Group" Name="Server Components">
+      <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ValidateServer">
+
+        <Object Type="Registry" Key3="Software\Microsoft\Microsoft Dynamics NAV\90\Service">
+          <Setting Key1="Installed" Substitution="InstalledServer"/>
+          <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="InstalledServer" Key3="%InstalledServer%"/>
+        </Object>
+        <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="InstalledServer">
+          <Setting Key1="InstalledServer">
+            <Rule Name="ServerInstalled" Query="$. = '1'" Error="None" Title="Microsoft Dynamics NAV Server is installed on this computer." Text="If you specified a Microsoft Dynamics NAV Server instance name, then the Best Practices Analyzer might show other errors or warnings specific to the instance."/>
+            <Rule Name="ServerNotInstalled" Query="$. != '1'" Error="None" Title="Microsoft Dynamics NAV Server could not be found on this computer." Text="Users may not be able to access Microsoft Dynamics NAV. If your Microsoft Dynamics NAV deployment is in a multi-tier setup, then consider running the Best Practices Analyzer on the computer that is hosting at least one Microsoft Dynamics NAV Server instance." GUID="cf4e2366-31e9-42d7-ae40-541dd19d5fde"/>
+          </Setting>
+        </Object>       
+        
+        <Object Type="Registry" Key3="SYSTEM\CurrentControlSet\Services\MicrosoftDynamicsNavServer$%Server Instance Name%">
+          <Setting Key1="ImagePath" Substitution="ImagePath">
+            <Rule Name="serverInstanceExists" Query="$."/>
+          </Setting>
+          <Object Type="If" Key1="'%ImagePath%' != ''">
+            <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="ServerInstanceExists" Key3="1"/>        
+          </Object>
+        </Object>
+
+        <!-- CHECK IF THE SERVER INSTANCE EXISTS -->
+        <Object Type="Group" Name="Microsoft Dynamics NAV Server Exists">
+          <Rule Name="ServerInstanceNotFound" Query="not($serverInstanceExists)" Error="Error" Title="The Microsoft Dynamics NAV Server Instance could not be found on this computer." Text="Microsoft Dynamics NAV Server Instance 'MicrosoftDynamicsNavServer${0}' does not exist." S0="%Server Instance Name%" AlwaysEvaluate="True"/>
+        </Object>
+
+        <!--  GET THE PATH TO THE SERVER INSTANCE CONFIG and SERVICE INSTANCE ACCOUNT NAME  -->
+        <Object Type="Group" Name="ServiceInstallation">
+          <Object Type="Registry" Key3="SYSTEM\CurrentControlSet\Services\MicrosoftDynamicsNavServer$%Server Instance Name%">
+            <Setting Key1="ImagePath" Substitution="PartialServerInstanceConfig" Format=".*config &quot;----"/>
+            <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="PartialServerInstanceConfig" Key3="%PartialServerInstanceConfig%"/>
+            <Setting Key1="ObjectName" Substitution="ServiceTierAccountName">
+              <Rule Name="Account" Query="$."/>
+            </Setting>
+            <!-- Convert UPN name to DOMAIN\Account format  -->
+            <Object Type="LookupAccount" Key1="Name" Key3="%ServiceTierAccountName%">
+              <Setting Key1="Sid" Substitution="AccountSid"/>
+              <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="AccountSid" Key3="%AccountSid%">
+                <Object Type="LookupAccount" Key1="Sid" Key3="%AccountSid%">
+                  <Setting Key1="Name" Substitution="AccountName"/>
+                  <Setting Key1="Domain" Substitution="AccountDomain"/>
+                  <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="AccountName" Key3="%AccountDomain%\%AccountName%"/>
+                  <!-- SID of NAV Service Account.  -->
+                  <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="UsingLocalComputerAccount" Key3="0"/>
+                  <Object Type="If" Key1="'%AccountSid%' = 'S-1-5-20'">
+                    <Object Type="Cache" Name="LocalCache" Key1="Delete" Key2="UsingLocalComputerAccount"/>
+                    <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="UsingLocalComputerAccount" Key3="1"/>
+                    <Rule Name="UsingComputerAccount" Query="$." Error="None"/>
+                  </Object>
+                </Object>
+              </Object>
+            </Object>
+          </Object>
+        </Object>
+
+        <!--  READ THE NAV SERVER INSTANCE CONFIG FILE  -->
+        <Object Type="Group" Name="ReadServerConfig">
+          <Object Type="GetComputerNameEx" Name="GetHostName">
+            <Setting Key1="ComputerNameDnsHostname" Substitution="HostName"/>
+            <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="PartialServerInstanceConfig">
+              <Setting Key1="ServerInstanceConfig" Substitution="ServerInstanceConfig" Format="\\[^\\^\s]+\.config&quot;----\CustomSettings.config"/>
+              <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="ValidConfigFile" Key3="0"/>
+              <Object Type="Xml" Key1="%HostName%" Key2="%ServerInstanceConfig%" Key3="appSettings">
+                <Object Type="Cache" Name="LocalCache" Key1="Delete" Key2="ValidConfigFile"/>
+                <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="ValidConfigFile" Key3="1"/>
+              </Object>
+              <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ValidConfigFile">
+                <Setting Key1="ValidConfigFile" Substitution="ValidConfigFile"/>
+                <Rule Name="ValidConfigFileCheck" Error="Error" Query="$. = 0" Title="Invalid Microsoft Dynamics NAV Server Instance Configuration File." Text="The Best Practices Analyzer could not read the Microsoft Dynamics NAV Server Instance configuration file '{0}'. This could be because the file is corrupted, missing, or misnamed. Check also 'Other Reports', for detailed descriptions." S0="%ServerInstanceConfig%" GUID="d1e8f987-d666-4af3-bcaf-2bcd48da347d"/>
+              </Object>
+              <Object Type="Xml" Key1="%HostName%" Key2="%ServerInstanceConfig%" Key3="appSettings/add[@key=&quot;DatabaseServer&quot;]">
+                <Setting Key1="@value" Substitution="DatabaseServer"/>
+                <Object Type="If" Name="CheckDatabaseName" Key1="'%DatabaseServer%' = ''">
+                  <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="DatabaseServer" Key3="."/>
+                </Object>
+                <Rule Name="DatabaseServer" Query="$."/>
+                <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="DatabaseServer" Key3="%DatabaseServer%"/>
+              </Object>
+              <Object Type="Xml" Key1="%HostName%" Key2="%ServerInstanceConfig%" Key3="appSettings/add[@key=&quot;DatabaseInstance&quot;]">
+                <Setting Key1="@value" Substitution="DatabaseInstance"/>
+                <Object Type="If" Name="CheckDatabaseName" Key1="'%DatabaseInstance%' = ''">
+                  <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="DatabaseInstance" Key3="Default"/>
+                </Object>
+                <Rule Name="DatabaseInstance" Query="$."/>
+                <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="DatabaseInstance" Key3="%DatabaseInstance%"/>
+              </Object>
+              <Object Type="Xml" Key1="%HostName%" Key2="%ServerInstanceConfig%" Key3="appSettings/add[@key=&quot;DatabaseName&quot;]">
+                <Setting Key1="@value" Substitution="DatabaseName"/>
+                <Rule Name="DatabaseName" Query="$."/>
+                <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="DatabaseName" Key3="%DatabaseName%"/>
+              </Object>
+              <Object Type="Xml" Key1="%HostName%" Key2="%ServerInstanceConfig%" Key3="appSettings/add[@key=&quot;ServerInstance&quot;]">
+                <Setting Key1="@value" Substitution="ServerInstance"/>
+                <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="ServerInstance" Key3="%ServerInstance%"/>
+              </Object>
+              <Object Type="Xml" Key1="%HostName%" Key2="%ServerInstanceConfig%" Key3="appSettings/add[@key=&quot;ClientServicesPort&quot;]">
+                <Setting Key1="@value" Substitution="ServerPort"/>
+                <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="ServerPort" Key3="%ServerPort%"/>
+              </Object>
+              <Object Type="Xml" Key1="%HostName%" Key2="%ServerInstanceConfig%" Key3="appSettings/add[@key=&quot;SOAPServicesPort&quot;]">
+                <Setting Key1="@value" Substitution="WebServicePort"/>
+                <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="WebServicePort" Key3="%WebServicePort%"/>
+              </Object>
+              <Object Type="Xml" Key1="%HostName%" Key2="%ServerInstanceConfig%" Key3="appSettings/add[@key=&quot;ODataServicesPort&quot;]">
+                <Setting Key1="@value" Substitution="ODataServicesPort"/>
+                <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="ODataServicesPort" Key3="%ODataServicesPort%"/>
+              </Object>
+              <Object Type="Xml" Key1="%HostName%" Key2="%ServerInstanceConfig%" Key3="appSettings/add[@key=&quot;Multitenant&quot;]">
+                <Setting Key1="@value" Substitution="Multitenant"/>
+                <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="Multitenant" Key3="%Multitenant%"/>
+              </Object>
+              <Object Type="Xml" Key1="%HostName%" Key2="%ServerInstanceConfig%" Key3="appSettings/add[@key='ServicesCertificateThumbprint']">
+                <Setting Key1="@value" Substitution="ServicesCertificateThumbprint"/>
+                <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="ServicesCertificateThumbprint" Key3="%ServicesCertificateThumbprint%"/>
+              </Object>
+              <Object Type="Xml" Key1="%HostName%" Key2="%ServerInstanceConfig%" Key3="appSettings/add[@key='ClientServicesCredentialType']">
+                <Setting Key1="@value" Substitution="ClientServicesCredentialType"/>
+                <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="ClientServicesCredentialType_NST" Key3="%ClientServicesCredentialType%"/>
+              </Object>
+              <Object Type="Xml" Key1="%HostName%" Key2="%ServerInstanceConfig%" Key3="appSettings/add[@key='ClientServicesFederationMetadataLocation']">
+                <Setting Key1="@value" Substitution="ClientServicesFederationMetadataLocation"/>
+                <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="ClientServicesFederationMetadataLocation" Key3="%ClientServicesFederationMetadataLocation%"/>
+              </Object>
+            </Object>
+          </Object>
+        </Object>
+
+        <!-- CHECK THAT NAV SERVER INSTANCE IS RUNNING -->
+        <Object Type="WMI" Name="CheckNAVServerRunning" Key3="Win32_Service" Key4="Name='MicrosoftDynamicsNavServer$%Server Instance Name%'">
+          <Setting Key1="Started"/>
+          <Rule Name="NAVServerInstanceNotStarted" Error="Error" Query="lower-case($.) = 'false'" Title="Microsoft Dynamics NAV Server Instance service is stopped." Text="Start the Microsoft Dynamics NAV Server Instance service." GUID="05a28bf0-3c3c-48a4-a591-5fe2de8c31cc"/>
+        </Object>
+    
+      </Object>
+    </Object>
+      
+    <!--  CHECK THAT MULTI-TENANCY HAS NOT BEEN ENABLED -->
+    <Object Type="Group" Name="Multitenancy">
+      <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="Multitenant">
+        <Setting Key1="Multitenant" Substitution="Multitenant"/>
+        <Rule Name="multiTenancyWarning" Error="NonDefault" Query="lower-case($.) = 'true'" Title="The Microsoft Dynamics NAV Server Instance is part of a multitenant deployment." Text="In a multitenant deployment architecture, this version of the Best Practices Analyzer analyzes the application database but not the tenant databases."/>
+      </Object>
+    </Object>
+
+    <Object Type="Group" Name="Database">
+      <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="ThreeTier" Key3="1"/>
+      <!--  CHECK THE DATABASE / INSTANCE  -->
+      <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="DatabaseServer">
+        <Setting Key1="DatabaseServer" Substitution="DatabaseServer"/>
+        <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="DatabaseInstance">
+          <Setting Key1="DatabaseInstance" Substitution="DatabaseInstance"/>
+          <Object Type="GetComputerNameEx" Name="GetHostName">
+            <Setting Key1="ComputerNameDnsHostname" Substitution="HostName"/>
+            <Object Type="If" Key1="'%DatabaseServer%' = '.' or lower-case('%DatabaseServer%') = '(local)' or lower-case('%DatabaseServer%') = lower-case('%HostName%') or lower-case('%DatabaseServer%') = 'localhost'">
+              <Object Type="Cache" Name="LocalCache" Key1="Delete" Key2="ThreeTier"/>
+              <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="ThreeTier" Key3="0"/>
+              <Rule Name="LocalNameRule" Error="None" Query="$." Text="A Microsoft Dynamics NAV database is installed on the server computer."/>
+            </Object>
+            <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ThreeTier">
+              <Setting Key1="ThreeTier" Substitution="ThreeTier"/>
+              <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="UsingLocalComputerAccount">
+                <Setting Key1="UsingLocalComputerAccount" Substitution="UsingLocalComputerAccount"/>
+                <Object Type="If" Key1="(%ThreeTier% = 1) and (%UsingLocalComputerAccount% = 1)">
+                  <Object Type="Cache" Name="LocalCache" Key1="Delete" Key2="AccountName"/>
+                  <Object Type="LookupAccount" Key1="Name" Key3="%HostName%$">
+                    <Setting Key1="Sid" Substitution="COMPUTERSID"/>
+                    <Object Type="LookupAccount" Key1="Sid" Key3="%COMPUTERSID%">
+                      <Setting Key1="Name" Substitution="COMPUTERNAME"/>
+                      <Setting Key1="Domain" Substitution="COMPUTERDOMAIN"/>
+                      <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="AccountName" Key3="%COMPUTERDOMAIN%\%COMPUTERNAME%"/>
+                    </Object>
+                  </Object>
+                  <Setting Key1="ServiceRecommendedAccount">
+                    <Rule Name="UseDomainUserAccount" Error="Warning" Query="$." Title="Microsoft Dynamics NAV Server Instance should use a dedicated domain user account." Text="Microsoft Dynamics NAV Server Instance is currently running under account [{0}]. We recommend using a dedicated domain user account." P0="$Account" GUID="23dab3de-39c6-4ea1-92ad-06ebb4e4d08f"/>
+                  </Setting>
+                </Object>
+                <Object Type="If" Key1="(%ThreeTier% = 0) and (%UsingLocalComputerAccount% = 1)">
+                  <Object Type="Cache" Name="LocalCache" Key1="Delete" Key2="AccountName"/>
+                  <Object Type="LookupAccount" Key1="Sid" Key3="S-1-5-20" Display="Hide">
+                    <Setting Key1="Name" Substitution="Name" Display="Hide"/>
+                    <Setting Key1="Domain" Substitution="Domain" Display="Hide"/>
+                    <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="AccountName" Key3="%Domain%\%Name%"/>
+                  </Object>
+                  <Setting Key1="ServiceAccountOk">
+                    <Rule Name="NetworkServiceAccountOnTwoTier" Error="None" Query="$." Text="Microsoft Dynamics NAV Server Instance is running under account [{0}]. That is acceptable for two-tier systems." P0="$Account"/>
+                  </Setting>
+                </Object>
+              </Object>
+              <!--  CHECK IF THE SQL SERVER IS RUNNING  -->
+              <Rule Name="WMIConnectSQL" Query="not($SQLServerName)" Error="Error" Title="WMI cannot be accessed on SQL Server." Text="Cannot connect to the Windows Management Instrumentation (WMI) repository on server '{0}'. This could be the result of a network or permissions problem. Check to see if RPC or WMI ports are blocked by the firewall. Error: {1}" S0="%DatabaseServer%" P1="$WMIException" GUID="50139f69-b75c-4693-8816-9a6600d943bb" AlwaysEvaluate="True"/>
+              <Object Type="WMI" Key1="%DatabaseServer%" Key3="Win32_ComputerSystem">
+                <Rule Name="WMIException" Query="string(../Exception/@Message)"/>
+                <Setting Key1="Name">
+                  <Rule Name="SQLServerName" Query="$."/>
+                </Setting>
+              </Object>
+              <Object Type="If" Name="UseDefaultInstance" Key1="'%DatabaseInstance%' = '' or '%DatabaseInstance%' = 'Default'">
+                <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="DBConnectionString" Key3="%DatabaseServer%"/>
+                <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="DBSpnString" Key3="%DatabaseServer%"/>
+                <Object Type="WMI" Name="CheckSQLSERVER" Key1="%DatabaseServer%" Key3="Win32_Service" Key4="Name='MSSQLSERVER'">
+                  <Setting Key1="StartName" Substitution="SQLServerAccountName"/>
+                  <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="SQLServerAccountName" Key3="%SQLServerAccountName%"/>
+                  <Setting Key1="Started"/>
+                  <Rule Name="SQLServerDefaultInstanceNotStarted" Error="Error" Query="lower-case($.) = 'false'" Title="SQL Server service is stopped." Text="Start the SQL Server service on database server '{0}'." S0="%DatabaseServer%" GUID="d5137dda-9c4d-49e4-ac5f-eecf02b60dbf"/>
+                </Object>
+              </Object>
+              <Object Type="If" Name="UseNamedInstance" Key1="'%DatabaseInstance%' != '' and '%DatabaseInstance%' != 'Default'">
+                <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="DBConnectionString" Key3="%DatabaseServer%\%DatabaseInstance%"/>
+                <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="DBSpnString" Key3="%DatabaseServer%:%DatabaseInstance%"/>
+                <Object Type="WMI" Name="CheckSQLSERVER" Key1="%DatabaseServer%" Key3="Win32_Service" Key4="Name='MSSQL$%DatabaseInstance%'">
+                  <Setting Key1="StartName" Substitution="SQLServerAccountName"/>
+                  <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="SQLServerAccountName" Key3="%SQLServerAccountName%"/>
+                  <Setting Key1="Started"/>
+                  <Rule Name="SQLServerNamedInstanceNotStarted" Error="Error" Query="lower-case($.) = 'false'" Title="SQL Server service is stopped." Text="Start the SQL Server service on database server '{0}'." S0="%DatabaseServer%" GUID="d5137dda-9c4d-49e4-ac5f-eecf02b60dbf"/>
+                </Object>
+              </Object>
+              <!-- CHECK IF SQL IS RUNNING AS NETWORK SERVICE OR A DOMAIN USER  -->
+              <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="SQLServerAccountName">
+                <Setting Key1="SQLServerAccountName" Substitution="SQLServerAccountName"/>
+                <Object Type="LookupAccount" Key1="Name" Key3="%SQLServerAccountName%">
+                  <Setting Key1="Sid" Substitution="SQLAccountSid"/>
+                  <Object Type="If" Key1="'%SQLAccountSid%' = 'S-1-5-20'">
+                    <Object Type="Cache" Name="LocalCache" Key1="Delete" Key2="SQLServerAccountName"/>
+                    <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="SQLServerAccountName" Key3="%DatabaseServer%$"/>
+                    <Rule Name="SQLServerUsingComputerAccount" Query="$." Error="None"/>
+                  </Object>
+                </Object>
+              </Object>
+              <!-- CHECK IF WE CAN CONNECT TO THE SQL SERVER DATABASE, AND RETRIEVE THE PRODUCT VERSION  -->
+              <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="Connected" Key3="0"/>
+              <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="DBConnectionString">
+                <Setting Key1="DBConnectionString" Substitution="DBConnectionString"/>
+                <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="DatabaseName">
+                  <Setting Key1="DatabaseName" Substitution="DatabaseName"/>
+                  <Object Type="SQL" Name="Server Names" Key1="Integrated Security=SSPI;database=master;server=%DBConnectionString%" Key2="SELECT SERVERPROPERTY('productversion') as Name" Key3="SQL">
+                    <Setting Key1="Name" Substitution="SQLProductVersion" Retrive="FailHard"/>
+                    <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="SQLProductVersion" Key3="%SQLProductVersion%"/>
+                    <Object Type="Cache" Name="LocalCache" Key1="Delete" Key2="Connected"/>
+                    <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="Connected" Key3="1"/>
+                  </Object>
+
+                  <!--  Tell user if we are not able to connect to db so that the user can correct the connection problem and run it again  -->
+                  <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="Connected">
+                    <Setting Key1="Connected" Substitution="Connected"/>
+                    <Rule Name="ConnectionCheck" Error="Error" Query="$. = 0" Title="Could not connect to SQL Server." Text="Could not connect to '{0}' database on database server '{1}'. Verify that this database server is running and that you have network access to the database. Check the firewall on the database server." S0="%DatabaseName%" S1="%DBConnectionString%" GUID="5bfc6f98-fb7b-44cb-ad38-49e54bee3197"/>
+                  </Object>
+
+                  <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="AccountName">
+                    <Setting Key1="AccountName" Substitution="AccountName"/>
+
+                    <!-- Validate that the service account has been created as a user on the database -->
+                    <Object Type="SQL" Name="SQLLogins" Key1="Integrated Security=SSPI;database=%DatabaseName%;server=%DBConnectionString%" Key2="Select users.name as Name from sys.sysusers users inner join sys.syslogins logins on users.sid = logins.sid where lower(logins.loginname) = lower('%AccountName%')" Key3="SQL">
+                      <Setting Key1="Name" Substitution="DatabaseLogin"/>
+                      <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="DatabaseLogin" Key3="%DatabaseLogin%"/>
+                    </Object>
+
+                    <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="DatabaseLogin">
+                      <Setting Key1="DatabaseLogin" Substitution="DatabaseLogin"/>
+                      <Rule Name="DatabaseLoginCheck" Error="Error" Query="count($.) = 0" Title="Could not find the user account '{0}' on the database '{1}'." Text="Please make sure that the service account has been created as a database user." S0="%AccountName%" S1="%DatabaseName%" GUID="6b042d41-c048-4e68-b269-37eee4181ea5"/>
+
+                      <!-- Validate that the service account user has been granted db_owner -->
+                      <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="dbOwnerPermissionAction" Key3="None"/>
+                      <Object Type="SQL" Name="dbOwnerPermissions" Key1="Integrated Security=SSPI;database=%DatabaseName%;server=%DBConnectionString%" Key2="WITH UserDBRoles (role_principal_id) AS (SELECT DBRoleMembers.role_principal_id FROM sys.database_role_members AS DBRoleMembers WHERE USER_NAME(DBRoleMembers.member_principal_id) = '%DatabaseLogin%' UNION ALL SELECT DBRoleMembers.role_principal_id FROM sys.database_role_members AS DBRoleMembers INNER JOIN UserDBRoles ON DBRoleMembers.member_principal_id = UserDBRoles.role_principal_id) SELECT COUNT(*) [Role] FROM UserDBRoles WHERE role_principal_id = 16384" Key3="SQL">
+                        <Setting Key1="Role" Substitution="dbOwnerRole"/>
+                        <Object Type="Cache" Name="LocalCache" Key1="Delete" Key2="dbOwnerPermissionAction"/>
+                        <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="dbOwnerPermissionAction" Key3="%dbOwnerRole%"/>
+                      </Object>
+
+                      <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="dbOwnerPermissionAction">
+                        <Setting Key1="dbOwnerPermissionAction" Substitution="dbOwnerRole"/>
+                        <Rule Name="dbOwnerPermissionCheckOk" Error="None" Query="$.=1" Title="SQL Server has been configured to work with Microsoft Dynamics NAV Server." Text="Address any warnings and align with Microsoft Dynamics NAV best practices that are defined in this tool and in the documentation."/>
+                        <Rule Name="dbOwnerPermissionCheckError" Error="Error" Query="not($.=1)" Title="Insufficient permissions are granted to the Microsoft Dynamics NAV Server Instance service account in database '{0}'." Text="Verify database role membership [db_owner] for user '{1}' in database '{0}'." S0="%DatabaseName%" S1="%AccountName%" GUID="d36ded03-0bc2-4299-b88c-e8bce5f13243"/>
+                      </Object>
+                    </Object>
+                  </Object>
+                </Object>
+              </Object>
+            </Object>
+          </Object>
+        </Object>
+      </Object>
+    </Object>
+
+    <!--  No support for SQL Server cluster -->
+    <Object Type="Group" Name="ActiveDirectory">
+      <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="UsingLocalComputerAccount">
+        <Setting Key1="UsingLocalComputerAccount" Substitution="UsingLocalComputerAccount"/>
+        <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="SQLProductVersion">
+          <Setting Key1="SQLProductVersion" Substitution="SQLProductVersion"/>
+          <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="DBSpnString">
+            <Setting Key1="DBSpnString" Substitution="DBSpnString"/>
+            <!--  // Get basic directory naming context information  -->
+            <Object Type="Directory" Name="cn" Class="Forest">
+              <Setting Key1="rootDomainNamingContext" Substitution="ROOTDN"/>
+              <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="ActiveAccountDomain" Key3="%ROOTDN%"/>
+              <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="ActiveSQLAccountDomain" Key3="%ROOTDN%"/>
+              <Object Type="GetComputerNameEx" Name="FQDN">
+                <Setting Key1="ComputerNameDnsFullyQualified" Substitution="FQDN"/>
+                <Setting Key1="ComputerNameDnsHostname" Substitution="HostName"/>
+                <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="DatabaseServer">
+                  <Setting Key1="DatabaseServer" Substitution="DatabaseServer"/>
+                  <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ServerInstance">
+                    <Setting Key1="ServerInstance" Substitution="ServerInstance"/>
+                    <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ServerPort">
+                      <Setting Key1="ServerPort" Substitution="ServerPort"/>
+                      <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="WebServicePort">
+                        <Setting Key1="WebServicePort" Substitution="WebServicePort"/>
+                        <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ODataServicesPort">
+                          <Setting Key1="ODataServicesPort" Substitution="ODataServicesPort"/>
+                          <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="AccountName">
+                            <Setting Key1="AccountName" Substitution="AccountName"/>
+                            <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="SQLServerAccountName">
+                              <Setting Key1="SQLServerAccountName" Substitution="SQLServerAccountName"/>
+                              <Object Type="LookupAccount" Key1="Name" Key3="%AccountName%">
+                                <Setting Key1="Sid" Substitution="AccountSid"/>
+                                <Object Type="LookupAccount" Key1="Sid" Key3="%AccountSid%">
+                                  <Setting Key1="Domain" Substitution="Domain"/>
+                                  <Object Type="If" Key1="not(contains(lower-case('%ROOTDN%'),lower-case('%Domain%')))">
+                                    <Object Type="Cache" Name="LocalCache" Key1="Delete" Key2="ActiveAccountDomain"/>
+                                    <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="ActiveAccountDomain" Key3="DC=%Domain%,%ROOTDN%"/>
+                                  </Object>
+                                  <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ActiveAccountDomain">
+                                    <Setting Key1="ActiveAccountDomain" Substitution="ActiveAccountDomain"/>
+                                    <Object Type="Directory" Key2="%ActiveAccountDomain%" Key3="objectSid=%AccountSid%" Key4="Subtree">
+                                      <Setting Key1="cn"/>
+                                      <!--   CHECK SPNs FOR THE NAV SERVER AND HTTP, ON THE SERVICE ACCOUNT  -->
+                                      <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ThreeTier">
+                                        <Setting Key1="ThreeTier" Substitution="ThreeTier"/>
+                                        <Object Type="If" Key1="(%ThreeTier% = 1)">
+                                          <Rule Name="SPN1Working" Error="None" Query="(contains(lower-case($GetSPNs), concat(';', 'DynamicsNAV/', lower-case('%FQDN%'), ':', %ServerPort%, ';')))" Text="SPN '{0}/{1}:{2}' has been configured for user account '{3}'." P0="'DynamicsNAV'" S1="%FQDN%" S2="%ServerPort%" S3="%AccountName%"/>
+                                          <Rule Name="SPN1Missing" Error="Error" Query="not(contains(lower-case($GetSPNs), concat(';', 'DynamicsNAV/', lower-case('%FQDN%'), ':', %ServerPort%, ';')))" Title="Service principal name is missing." Text="SPN '{0}/{1}:{2}' was not found for user account '{3}'." P0="'DynamicsNAV'" S1="%FQDN%" S2="%ServerPort%" S3="%AccountName%" GUID="72298db0-8ff5-4c2b-97a3-942e056244cd" AlwaysEvaluate="True"/>
+                                          <Rule Name="SPN2Missing" Error="Warning" Query="not(contains(lower-case($GetSPNs), concat(';', 'DynamicsNAV/', lower-case('%HostName%'), ':', %ServerPort%, ';')))" Title="Service principal name is missing." Text="SPN '{0}/{1}:{2}' was not found for user account '{3}'." P0="'DynamicsNAV'" S1="%HostName%" S2="%ServerPort%" S3="%AccountName%" GUID="57a3e293-91c4-416e-ab44-d54890eab687" AlwaysEvaluate="True"/>
+                                          <Rule Name="SPN3Missing" Error="Error" Query="not(contains(lower-case($GetSPNs), concat('http/', lower-case('%FQDN%'), ':', %WebServicePort%, ';')))" Title="Service principal name is missing." Text="SPN '{0}/{1}:{2}' was not found for user account '{3}'. You must create this SPN to publish Web services from Microsoft Dynamics NAV." P0="'http'" S1="%FQDN%" S2="%WebServicePort%" S3="%AccountName%" GUID="72298db0-8ff5-4c2b-97a3-942e056244cd" AlwaysEvaluate="True"/>
+                                          <Rule Name="SPN4Missing" Error="Warning" Query="not(contains(lower-case($GetSPNs), concat('http/', lower-case('%HostName%'), ':', %WebServicePort%, ';')))" Title="Service principal name is missing." Text="SPN '{0}/{1}:{2}' was not found for user account '{3}'. You must create this SPN to publish Web services from Microsoft Dynamics NAV." P0="'http'" S1="%HostName%" P2="%WebServicePort%" S3="%AccountName%" GUID="57a3e293-91c4-416e-ab44-d54890eab687" AlwaysEvaluate="True"/>
+                                          <Rule Name="SPN5Missing" Error="Error" Query="not(contains(lower-case($GetSPNs), concat('http/', lower-case('%FQDN%'), ':', %ODataServicesPort%, ';')))" Title="Service principal name is missing." Text="SPN '{0}/{1}:{2}' was not found for user account '{3}'. You must create this SPN to publish ODATA services from Microsoft Dynamics NAV." P0="'http'" S1="%FQDN%" S2="%ODataServicesPort%" S3="%AccountName%" GUID="72298db0-8ff5-4c2b-97a3-942e056244cd" AlwaysEvaluate="True"/>
+                                          <Rule Name="SPN6Missing" Error="Warning" Query="not(contains(lower-case($GetSPNs), concat('http/', lower-case('%HostName%'), ':', %ODataServicesPort%, ';')))" Title="Service principal name is missing." Text="SPN '{0}/{1}:{2}' was not found for user account '{3}'. You must create this SPN to publish ODATA services from Microsoft Dynamics NAV." P0="'http'" S1="%HostName%" P2="%ODataServicesPort%" S3="%AccountName%" GUID="57a3e293-91c4-416e-ab44-d54890eab687" AlwaysEvaluate="True"/>
+                                        </Object>
+                                      </Object>
+                                      <Setting Key1="servicePrincipalName">
+                                        <Rule Name="GetSPNs" Query="concat(';',join(';', $.),';')" AlwaysEvaluate="True"/>
+                                      </Setting>
+
+                                      <!--  CHECK FOR DUPLICATE SPNs  -->
+                                      <Object Type="Directory" Key2="%ActiveAccountDomain%" Key3="servicePrincipalName=DynamicsNAV/%FQDN%:%ServerPort%" Key4="Subtree">
+                                        <Rule Name="DuplicateSIFQDNSPNs" Error="Error" Query="count($.) &gt; 1" Title="Duplicate service principal name was detected." Text="A duplicate SPN has been detected with the name '{0}/{1}:{2}'." P0="'DynamicsNAV'" S1="%FQDN%" S2="%ServerPort%" S3="%AccountName%" GUID="baf104f9-ee3b-4d8c-8c2a-95486f9f9b48"/>
+                                      </Object>
+                                      <Object Type="Directory" Key2="%ActiveAccountDomain%" Key3="servicePrincipalName=DynamicsNAV/%HostName%:%ServerPort%" Key4="Subtree">
+                                        <Rule Name="DuplicateSIHNSPNs" Error="Error" Query="count($.) &gt; 1" Title="Duplicate service principal name was detected." Text="A duplicate SPN has been detected with the name '{0}/{1}:{2}'." P0="'DynamicsNAV'" S1="%HostName%" S2="%ServerPort%" GUID="baf104f9-ee3b-4d8c-8c2a-95486f9f9b48"/>
+                                      </Object>
+                                      <Object Type="Directory" Key2="%ActiveAccountDomain%" Key3="servicePrincipalName=http/%FQDN%:%WebServicePort%" Key4="Subtree">
+                                        <Rule Name="DuplicateHTTPFQDNSPNs" Error="Error" Query="count($.) &gt; 1" Title="Duplicate service principal name was detected." Text="A duplicate SPN has been detected with the name '{0}/{1}:{2}'." P0="'http'" S1="%FQDN%" S2="%WebServicePort%" GUID="baf104f9-ee3b-4d8c-8c2a-95486f9f9b48"/>
+                                      </Object>
+                                      <Object Type="Directory" Key2="%ActiveAccountDomain%" Key3="servicePrincipalName=http/%HostName%:%WebServicePort%" Key4="Subtree">
+                                        <Rule Name="DuplicateHTTPHNSPNs" Error="Error" Query="count($.) &gt; 1" Title="Duplicate service principal name was detected." Text="A duplicate SPN has been detected with the name '{0}/{1}:{2}'." P0="'http'" S1="%HostName%" S2="%WebServicePort%" GUID="baf104f9-ee3b-4d8c-8c2a-95486f9f9b48"/>
+                                      </Object>
+                                      <Object Type="Directory" Key2="%ActiveAccountDomain%" Key3="servicePrincipalName=http/%FQDN%:%ODataServicesPort%" Key4="Subtree">
+                                        <Rule Name="DuplicateODATAFQDNSPNs" Error="Error" Query="count($.) &gt; 1" Title="Duplicate service principal name was detected." Text="A duplicate SPN has been detected with the name '{0}/{1}:{2}'." P0="'http'" S1="%FQDN%" S2="%ODataServicesPort%" GUID="baf104f9-ee3b-4d8c-8c2a-95486f9f9b48"/>
+                                      </Object>
+                                      <Object Type="Directory" Key2="%ActiveAccountDomain%" Key3="servicePrincipalName=http/%HostName%:%ODataServicesPort%" Key4="Subtree">
+                                        <Rule Name="DuplicateODATAHNSPNs" Error="Error" Query="count($.) &gt; 1" Title="Duplicate service principal name was detected." Text="A duplicate SPN has been detected with the name '{0}/{1}:{2}'." P0="'http'" S1="%HostName%" S2="%ODataServicesPort%" GUID="baf104f9-ee3b-4d8c-8c2a-95486f9f9b48"/>
+                                      </Object>
+
+                                      <!--  SQL SERVER SPNs  -->
+                                      <Object Type="LookupAccount" Key1="Name" Key3="%SQLServerAccountName%">
+                                        <Setting Key1="Sid" Substitution="SQLAccountSid"/>
+                                        <Object Type="LookupAccount" Key1="Sid" Key3="%SQLAccountSid%">
+                                          <Setting Key1="Domain" Substitution="SQLDomain"/>
+                                          <Object Type="If" Key1="not(contains(lower-case('%ROOTDN%'),lower-case('%SQLDomain%')))">
+                                            <Object Type="Cache" Name="LocalCache" Key1="Delete" Key2="ActiveSQLAccountDomain"/>
+                                            <Object Type="Cache" Name="LocalCache" Key1="Add" Key2="ActiveSQLAccountDomain" Key3="DC=%Domain%,%ROOTDN%"/>
+                                          </Object>
+                                        </Object>
+                                        <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ActiveSQLAccountDomain">
+                                          <Setting Key1="ActiveSQLAccountDomain" Substitution="ActiveSQLAccountDomain"/>
+                                          <Object Type="Directory" Key2="%ActiveSQLAccountDomain%" Key3="objectSid=%SQLAccountSid%" Key4="Subtree">
+                                            <Rule Name="SQLServerSPNMissing" Error="Error" Query="not(contains(lower-case($GetSQLServerSPNs), concat('mssqlsvc/', lower-case($DatabaseServer))))" Text="No SPNs have been configured '{0}/{1}' on SQL Server account '{2}'." P0="'MSSQLSvc'" P1="$DatabaseServer" S2="%SQLServerAccountName%" GUID="72298db0-8ff5-4c2b-97a3-942e056244cd" AlwaysEvaluate="True"/>
+                                            <Rule Name="SQLServerSPNExists" Error="None" Query="(contains(lower-case($GetSQLServerSPNs), concat('mssqlsvc/', lower-case($DatabaseServer))))" Text="SPNs have been configured '{0}/{1}' for the SQL Server account '{2}'." P0="'MSSQLSvc'" P1="$DatabaseServer" S2="%SQLServerAccountName%" AlwaysEvaluate="True"/>
+                                            <Setting Key1="servicePrincipalName" Substitution="SQLServerSPNs">
+                                              <Rule Name="GetSQLServerSPNs" Query="$."/>
+                                            </Setting>
+                                          </Object>
+                                        </Object>
+                                      </Object>
+                                    </Object>
+                                  </Object>
+                                </Object>
+                              </Object>
+                            </Object>
+                          </Object>
+                        </Object>
+                      </Object>
+                    </Object>
+                  </Object>
+                </Object>
+              </Object>
+            </Object>
+          </Object>
+        </Object>
+      </Object>
+    </Object>
+
+    <!-- FIND AND READ NAV WEB SERVER COMPONENTS -->
+    <Object Type="Group" Name="Web Server Components">
+      <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ValidateWebServer">
+
+        <Object Type="Registry" Key3="Software\Microsoft\Microsoft Dynamics NAV\90\Web Client">
+          <Setting Key1="Installed" Substitution="InstalledWebServer"/>
+          <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="InstalledWebServer" Key3="%InstalledWebServer%"/>
+          <Setting Key1="Name" Substitution="WebServerSiteName"/>
+          <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="WebServerSiteName" Key3="%WebServerSiteName%"/>
+          <Setting Key1="Path" Substitution="WebApplicationSitePath"/>
+          <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="WebApplicationConfig" Key3="%WebApplicationSitePath%web.config"/>
+        </Object>
+
+        <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="InstalledWebServer">
+          <Setting Key1="InstalledWebServer">
+            <Rule Name="WebServerInstalled" Query="$. = '1'" Error="None" Title="Microsoft Dynamics NAV Web Server is installed on this computer." Text="If you specified a Microsoft Dynamics NAV web server instance name, then the Best Practices Analyzer might show other errors or warnings specific to the instance."/>
+            <Rule Name="WebServerNotInstalled" Query="$. != '1'" Error="None" Title="Microsoft Dynamics NAV Web Server could not be found on this computer." Text="Users may not be able to access Microsoft Dynamics NAV from their browser. If your Microsoft Dynamics NAV deployment is in a multi-tier setup, then consider running the Best Practices Analyzer on the computer that is hosting at least one Microsoft Dynamics NAV web server instance."/>
+          </Setting>
+        </Object>
+
+        <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="InstalledWebServer">
+          <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="WebServerSiteName">
+            <Setting Key1="WebServerSiteName" Substitution="WebServerSiteName"/>
+            <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="WinDir">
+              <Setting Key1="WinDir" Substitution="WinDir"/>
+              <Object Type="Xml" Key2="%WinDir%\system32\inetsrv\config\applicationHost.config" Key3="configuration/system.applicationHost/sites">
+                <Setting Key1=".//site[@name='%WebServerSiteName%']" Substitution="WebSite"/>
+                <Object Type="If" Key1="'%WebSite%' != ''">
+                  <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="WebSiteExists" Key3="1"/>
+                </Object>
+                <Setting Key1=".//site[@name='%WebServerSiteName%']/bindings/binding[@protocol='https']/@protocol" Substitution="WebSiteProtocol"/>
+                <Object Type="If" Key1="'%WebSiteProtocol%' = 'https'">
+                  <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="WebSiteSupportsSSL" Key3="1"/>
+                </Object>
+                <Setting Key1=".//site[@name='%WebServerSiteName%']/application[@path='/']/virtualDirectory[@path='/%Web Server Instance Name%']/@physicalPath" Substitution="WebInstanceConfigPath"/>
+                <Object Type="If" Key1="'%WebInstanceConfigPath%' != ''">
+                  <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="WebServerInstanceExists" Key3="1"/>
+                  <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="WebServerInstanceConfig" Key3="%WebInstanceConfigPath%\web.config"/>
+                </Object>
+              </Object>
+              <Object Type="Xml" Key2="%WinDir%\system32\inetsrv\config\applicationHost.config" Key3="configuration/system.webServer">
+                <Setting Key1=".//httpCompression/dynamicTypes/add[@mimeType='text/*']/@enabled" Substitution="DynamicCompressionEnabledText"/>
+                <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="DynamicCompressionEnabledText" Key3="%DynamicCompressionEnabledText%"/>
+                <Setting Key1=".//httpCompression/dynamicTypes/add[@mimeType='application/json; charset=utf-8']/@enabled" Substitution="DynamicCompressionEnabledJson"/>
+                <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="DynamicCompressionEnabledJson" Key3="%DynamicCompressionEnabledJson%"/>              
+              </Object>
+            </Object>
+          </Object>
+        </Object>
+
+        <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="InstalledWebServer">
+          <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="WebServerSiteName">
+            <Setting Key1="WebServerSiteName" Substitution="WebServerSiteName"/>
+            <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="WebSiteExists">
+              <Setting Key1="WebSiteExists">
+                <Rule Name="WebSiteNotFound" Query="$. != '1'" Error="Error" Title="Invalid configuration of the Microsoft Dynamics NAV Web Server." Text="The Best Practices Analyzer for Microsoft Dynamics NAV could not find the web site '{0}' in the IIS configuration file (applicationHost.config). This can occur because the file is corrupted, missing or misnamed, or because the web site has been renamed. Check 'Other Reports' for detailed descriptions." S0="%WebServerSiteName%" GUID="d9b57eae-c6d6-4ecf-b56b-c6fe94c875b9"/>
+              </Setting>
+            </Object>
+            <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="WebServerInstanceExists">
+              <Setting Key1="WebServerInstanceExists">
+                <Rule Name="WebInstanceExists" Query="$. = '1'"/>
+                <Rule Name="WebInstanceNotFound" Query="not($WebInstanceExists)" Error="Error" Title="The Microsoft Dynamics NAV Web Server Instance could not be found on this computer." Text="Microsoft Dynamics NAV Web Server Instance '{0}' does not exist under the web site '{1}'. Make sure you entered the web server instance name using the correct case. You can find the web server instance name in IIS Manager or by using the Get-NavWebServerInstance PowerShell cmdlet." S0="%Web Server Instance Name%" S1="%WebServerSiteName%"/>
+              </Setting>
+            </Object>
+          </Object>
+        </Object>
+      
+        <Object Type="Group" Name="Server Instance (Virtual Directory) Configuration">
+          <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="WebServerInstanceExists">
+            <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="WebServerInstanceConfig">
+              <Setting Key1="WebServerInstanceConfig" Substitution="WebServerInstanceConfig"/>
+              <Object Type="Xml" Key2="%WebServerInstanceConfig%" Key3="configuration/DynamicsNAVSettings/add[@key='ClientServicesCredentialType']">
+                <Setting Key1="@value" Substitution="ClientServicesCredentialType"/>
+                <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="ClientServicesCredentialType_WebServer" Key3="%ClientServicesCredentialType%"/>
+              </Object>
+              <Object Type="Xml" Key2="%WebServerInstanceConfig%" Key3="configuration/DynamicsNAVSettings/add[@key='ACSUri']">
+                <Setting Key1="@value" Substitution="ACSUri"/>
+                <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="ACSUri" Key3="%ACSUri%"/>
+              </Object>
+              <Object Type="Xml" Key2="%WebServerInstanceConfig%" Key3="configuration/DynamicsNAVSettings/add[@key='DnsIdentity']">
+                <Setting Key1="@value" Substitution="DnsIdentity"/>
+                <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="DnsIdentity" Key3="%DnsIdentity%"/>
+              </Object>             
+            </Object>
+          </Object>
+        </Object>
+
+        <Object Type="Group" Name="IIS Application Configuration">
+          <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="WebSiteExists">
+            <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="WebApplicationConfig">
+              <Setting Key1="WebApplicationConfig" Substitution="WebApplicationConfig"/>
+              <Object Type="Xml" Key2="%WebApplicationConfig%" Key3="configuration/system.web">
+                <Setting Key1=".//authentication[@mode!='Forms']" Substitution="OtherAuthenticationModes"/>
+                <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="OtherAuthenticationModes" Key3="%OtherAuthenticationModes%"/>
+                <Setting Key1=".//authentication/@mode" Substitution="AuthenticationMode"/>
+                <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="AuthenticationMode" Key3="%AuthenticationMode%"/>
+                <Setting Key1=".//authentication[@mode='Forms']/forms" Substitution="FormsNode"/>
+                <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="FormsNode" Key3="%FormsNode%"/>
+                <Setting Key1=".//authentication[@mode='Forms']/forms/@loginUrl" Substitution="LoginUrl"/>
+                <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="LoginUrl" Key3="%LoginUrl%"/>
+              </Object>
+              <Object Type="Xml" Key2="%WebApplicationConfig%" Key3="configuration/system.webServer">
+                <Setting Key1=".//urlCompression/@doDynamicCompression" Substitution="DoDynamicCompression"/>
+                <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="DoDynamicCompression" Key3="%DoDynamicCompression%"/>
+              </Object>
+            </Object>
+          </Object>
+        </Object>
+        
+      </Object>
+    </Object>
+    
+    <!-- CHECK WEB SERVER CONFIGURATION FOR MOBILE DEVICES -->
+    <Object Type="Group" Name="Mobile Devices">
+   
+      <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="WebServerInstanceExists">
+        <Object Type="Group" Name="Site (Application) Configuration">
+          <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="WebApplicationConfig">
+            <Setting Key1="WebApplicationConfig" Substitution="WebApplicationConfig"/>
+            <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="DoDynamicCompression">
+              <Setting Key1="DoDynamicCompression">
+                <Rule Name="WebApplication_DoDynamicCompression" Query="lower-case($.) != 'true'" Error="Warning" Title="The Microsoft Dynamics NAV Web Server is not optimally configured for mobile devices." Text="The web site configuration file '{0}' should have 'doDynamicCompression' set to 'true' on the 'urlCompression' node. You should only disable Dynamic Compression if CPU resources are limited on the Web Server computer. To enable Dynamic Compression, make sure the feature is installed in IIS and check &quot;Enable dynamic content compression&quot; in the Compression settings window for the web site in IIS." S0="%WebApplicationConfig%" GUID="c3bf54f4-f2ee-4c99-bf81-950833ce364a"/>
+              </Setting>
+            </Object>
+          </Object>
+        </Object>
+        <Object Type="Group" Name="IIS Configuration">
+          <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="DynamicCompressionEnabledText">
+            <Setting Key1="DynamicCompressionEnabledText">
+              <Rule Name="WebServer_DynamicCompressionEnabledText" Query="not($WebApplication_DoDynamicCompression) and lower-case($.) != 'true'" Error="Warning" Title="The Microsoft Dynamics NAV Web Server is not optimally configured for mobile devices." Text="The web server configuration should have Dynamic Compression enabled for the text mime type. To enable Dynamic Compression for this mime type, enable 'text/*' in the list of compression mime types in IIS." GUID="c3bf54f4-f2ee-4c99-bf81-950833ce364a"/>
+            </Setting>
+          </Object>
+          <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="DynamicCompressionEnabledJson">
+            <Setting Key1="DynamicCompressionEnabledJson">
+              <Rule Name="WebServer_DynamicCompressionEnabledJson" Query="not($WebApplication_DoDynamicCompression) and lower-case($.) != 'true'" Error="Warning" Title="The Microsoft Dynamics NAV Web Server is not optimally configured for mobile devices." Text="The web server configuration should have Dynamic Compression enabled for the json mime type. To enable Dynamic Compression for this mime type, enable 'application/json; charset=utf-8' in the list of compression mime types in IIS." GUID="c3bf54f4-f2ee-4c99-bf81-950833ce364a"/>
+            </Setting>
+          </Object>       
+        </Object>     
+       </Object>
+    
+    </Object>
+
+    <!-- CHECK FOR SECURE COMMUNICATION FOR NAV COMPONENTS -->
+    <Object Type="Group" Name="Secure Communication">
+      
+      <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ServerInstanceExists">
+        <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="ClientServicesCredentialType_NST">
+          <Setting Key1="ClientServicesCredentialType_NST" Substitution="ClientServicesCredentialType_NST"/>
+          <Object Type="If" Key1="lower-case('%ClientServicesCredentialType_NST%') != 'windows'">
+              <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="ServicesCertificateThumbprint">
+              <Setting Key1="ServicesCertificateThumbprint" Substitution="ServicesCertificateThumbprint">
+                <Rule Name="NST_NonEmptyServicesCertificateThumbprint" Query="$. = ''" Error="Warning" Title="Microsoft Dynamics NAV Server is not configured securely." Text="The configuration for Microsoft Dynamics NAV Server instance '{0}' must have 'ServicesCertificateThumbprint' parameter set to a valid certificate thumbprint. The value is currently empty. It is recommended that certificates are used to secure communication between the Microsoft Dynamics NAV client and Microsoft Dynamics NAV Server when not using Windows authentication." S0="%Server Instance Name%" GUID="32154ea0-930f-4360-9f82-a9ba3d387042"/>
+                <Rule Name="NST_ValidServicesCertificateThumbprint" Query="not($NST_NonEmptyServicesCertificateThumbprint) and not(matches(lower-case($.),'^[0-9a-f]+$'))" Error="Warning" Title="Microsoft Dynamics NAV Server is not configured securely." Text="The configuration for Microsoft Dynamics NAV Server instance '{0}' must have the 'ServicesCertificateThumbprint' parameter set to a valid certificate thumbprint. The current value is '{1}'. Thumbprints must contain hexadecimal characters without spaces, such as 'a909502dd82ae41433e6f83886b00d4277a32a7b'." S0="%Server Instance Name%" S1="%ServicesCertificateThumbprint%" GUID="32154ea0-930f-4360-9f82-a9ba3d387042" AlwaysEvaluate="True"/>            
+              </Setting>
+              </Object>
+          </Object>
+        </Object>
+      </Object>
+      <Rule Name="ServerInstanceConfiguredSecurely" Query="$serverInstanceExists and not($NST_NonEmptyServicesCertificateThumbprint) and not($NST_ValidServicesCertificateThumbprint)" Error="None" Title="The Microsoft Dynamics NAV Server Instance is configured securely." Text="The Best Practices Analyzer scans the Microsoft Dynamics NAV deployment for a limited set of configuration parameters. It is recommended that you also manually assess your Microsoft Dynamics NAV deployment entry points and communication channels for optimal security." AlwaysEvaluate="True"/>
+      
+      <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="InstalledWebServer">
+        <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="WebSiteExists">
+          <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="WebSiteSupportsSSL">
+            <Setting Key1="WebSiteSupportsSSL">
+              <Rule Name="WebSite_SupportsSSL" Query="$. != '1'" Error="Warning" Title="Microsoft Dynamics NAV Web Server is not configured securely." Text="The web server is not configured for SSL. It is recommended that the HTTPS protocol and certificates are used to secure communication between the browser and the Microsoft Dynamics NAV Web Server." GUID="46e59402-3254-4246-92cd-dafd666cf357"/>
+            </Setting>
+          </Object>
+          <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="WebServerInstanceExists">
+            <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="WebServerInstanceConfig">
+              <Setting Key1="WebServerInstanceConfig" Substitution="WebServerInstanceConfig"/>
+              <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="ClientServicesCredentialType_WebServer">
+                <Setting Key1="ClientServicesCredentialType_WebServer" Substitution="ClientServicesCredentialType_WebServer"/>
+                <Object Type="If" Key1="lower-case('%ClientServicesCredentialType_WebServer%') != 'windows'">
+                  <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="DnsIdentity">
+                    <Setting Key1="DnsIdentity">
+                      <Rule Name="WebInstance_NonEmptyDnsIdentity" Query="$. = ''" Error="Error" Title="Microsoft Dynamics NAV Web Server is not configured securely." Text="The web server instance configuration file '{0}' does not specify the certificate name that is used by the Microsoft Dynamics NAV server instance by the 'DnsIdentity' parameter. It is recommended that certificates are used to secure communication between Microsoft Dynamics NAV Server and Microsoft Dynamics NAV web server when not using Windows authentication." S0="%WebServerInstanceConfig%" GUID="46e59402-3254-4246-92cd-dafd666cf357"/>
+                    </Setting>
+                  </Object>
+                </Object>
+              </Object>
+            </Object>
+          </Object>
+        </Object>
+      </Object>
+      <Rule Name="WebServerConfiguredSecurely" Query="$WebInstanceExists and not($WebSite_SupportsSSL) and not($WebInstance_NonEmptyDnsIdentity)" Error="None" Title="The Microsoft Dynamics NAV Web Server Instance is configured securely." Text="The Best Practices Analyzer scans the Microsoft Dynamics NAV deployment for a limited set of configuration parameters. It is recommended that you also manually assess your Microsoft Dynamics NAV deployment entry points and communication channels for optimal security." AlwaysEvaluate="True"/>
+   
+    </Object>
+    
+    <!-- CHECK FOR SINGLE SIGN-ON FOR OFFICE 365 -->
+    <Object Type="Group" Name="Single Sign-On (SSO)" SsoValidation="checkSso">
+      
+      <Object Type="Group" Name="NAV Server Instance">
+        <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="ValidateServer">
+          <Setting Key1="ValidateServer">
+            <Rule Name="CheckIfIncompleteValidation_ServerInstance" Query="$ServerInstanceNotFound or $. != 1" Error="Warning" Title="A Microsoft Dynamics NAV component that is required for Single Sign-on is missing." Text="The specified Microsoft Dynamics NAV Server instance was not found on this computer or a Microsoft Dynamics NAV Server instance name was not specified. You should also run the Best Practices Analyzer on a computer on which at least one Microsoft Dynamics NAV Server instance is installed. This is required for Single Sign-on with Office 365." GUID="2ac664ea-2302-4655-a219-30d6097b96cc" AlwaysEvaluate="True"/>
+          </Setting>
+        </Object>
+        <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ServerInstanceExists">
+          <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="ClientServicesCredentialType_NST">
+            <Setting Key1="ClientServicesCredentialType_NST" Substitution="ClientServicesCredentialType_NST">
+              <Rule Name="NST_CorrectClientServicesCredentialType" Query="lower-case($.) != 'accesscontrolservice' and lower-case($.) != 'navuserpassword'" Error="Error" Title="Microsoft Dynamics NAV Server is not configured correctly for Single Sign-on with Office 365." Text="The configuration for the Microsoft Dynamics NAV Server instance '{0}' must have the 'ClientServicesCredentialType' parameter set to 'AccessControlService' or 'NavUserPassword'. The current value is '{1}'." S0="%Server Instance Name%" S1="%ClientServicesCredentialType_NST%" GUID="6b642120-358a-42c0-8e7c-6cf8bd152be9"/>
+            </Setting>
+          </Object>
+          <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="ClientServicesFederationMetadataLocation">
+            <Setting Key1="ClientServicesFederationMetadataLocation" Substitution="ClientServicesFederationMetadataLocation">
+              <Rule Name="NST_ValidFederationMetadataLocation" Query="not(matches(lower-case($.),'^https\://login\.windows\.net/[^/]+/federationmetadata/2007\-06/federationmetadata\.xml$'))" Error="Error" Title="Microsoft Dynamics NAV Server is not configured correctly for Single Sign-on with Office 365." Text="The configuration for Microsoft Dynamics NAV Server instance '{0}' must have the 'ClientServicesFederationMetadataLocation' parameter set to a value that has the format 'https://login.windows.net/yourTenantId/FederationMetadata/2007-06/FederationMetadata.xml'. The current value is '{1}'." S0="%Server Instance Name%" S1="%ClientServicesFederationMetadataLocation%" GUID="6b642120-358a-42c0-8e7c-6cf8bd152be9"/>
+            </Setting>
+            <Object Type="If" Name="Extract AAD tenant identifier Nav Server configuration" Key1="'%ClientServicesFederationMetadataLocation%' != ''">
+              <Setting Key1="substring-after(substring-before(lower-case('%ClientServicesFederationMetadataLocation%'), '/federationmetadata/2007'), 'https://login.windows.net/')" Substitution="AadTenantIdentifierNavServer"/>
+              <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="AadTenantIdentifierNavServer" Key3="%AadTenantIdentifierNavServer%"/>
+            </Object>
+          </Object>
+        </Object>
+      </Object>
+      
+      <Object Type="Group" Name="Web Server Components">
+        <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="ValidateWebServer">
+          <Setting Key1="ValidateWebServer">
+            <Rule Name="CheckIfIncompleteValidation_WebServer" Query="$WebServerNotInstalled or $WebInstanceNotFound or $. != 1" Error="Warning" Title="A Microsoft Dynamics NAV component that is required for Single Sign-on is missing." Text="The specified Microsoft Dynamics NAV web server instance was not found on this computer, or a web server instance name was not specified. You should also run the Best Practices Analyzer on a computer on which at least one Microsoft Dynamics NAV web server instance is installed. This is required for Single Sign-on with Office 365." GUID="2ac664ea-2302-4655-a219-30d6097b96cc" AlwaysEvaluate="True"/>
+          </Setting>
+        </Object>
+        <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="WebServerInstanceExists">
+          <Object Type="Group" Name="Site (Application) Configuration">
+            <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="WebApplicationConfig">
+              <Setting Key1="WebApplicationConfig" Substitution="WebApplicationConfig"/>
+              <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="OtherAuthenticationModes">
+                <Setting Key1="OtherAuthenticationModes">
+                  <Rule Name="WebApplication_OnlyOneAuthentication" Query="$. != ''" Error="Error" Title="Microsoft Dynamics NAV Web Server is not configured correctly for Single Sign-on with Office 365." Text="The web application configuration file '{0}' must have only one &lt;authentication&gt; node. Either multiple nodes were found or the node is not enabled for Forms authentication. To enable Forms authentication, set the 'mode' attribute in the &lt;authentication&gt; node to 'Forms'." S0="%WebApplicationConfig%" GUID="c7bd4256-ef1f-44ea-b39c-a22bc437ace8"/>
+                </Setting>
+              </Object>
+              <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="AuthenticationMode">
+                <Setting Key1="AuthenticationMode" Substitution="AuthenticationMode">
+                  <Rule Name="WebApplication_FormsAuthenticationEnabled" Query="lower-case($.) != 'forms'" Error="Error" Title="Microsoft Dynamics NAV Web Server is not configured correctly for Single Sign-on with Office 365." Text="The web application configuration file '{0}' must have Forms Authentication enabled. To enable Forms authentication, set the 'mode' attribute in the &lt;authentication&gt; node to 'Forms'." S0="%WebApplicationConfig%" GUID="c7bd4256-ef1f-44ea-b39c-a22bc437ace8"/>
+                </Setting>
+              </Object>
+              <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="FormsNode">
+                <Setting Key1="FormsNode" Substitution="FormsNode">
+                  <Rule Name="WebApplication_AuthenticationNodeHasFormsTag" Query="not($WebApplication_FormsAuthenticationEnabled) and $. = ''" Error="Error" Title="Microsoft Dynamics NAV Web Server is not configured correctly for Single Sign-on with Office 365." Text="The web application configuration file '{0}' must have a &lt;forms&gt; node within the &lt;authentication&gt; node." S0="%WebApplicationConfig%" GUID="c7bd4256-ef1f-44ea-b39c-a22bc437ace8" AlwaysEvaluate="True"/>
+                </Setting>
+              </Object>
+              <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="LoginUrl">
+                <Setting Key1="LoginUrl" Substitution="LoginUrl">
+                  <Rule Name="WebApplication_CorrectLoginUrlOnFormsAuthentication" Query="not($WebApplication_FormsAuthenticationEnabled) and not($WebApplication_AuthenticationNodeHasFormsTag) and lower-case($.) != '~/signin.aspx'" Error="Error" Title="Microsoft Dynamics NAV Web Server is not configured correctly for Single Sign-on with Office 365." Text="The web application configuration file '{0}' must have the attribute 'loginUrl' with the value '~/SignIn.aspx' in the &lt;forms&gt; node." S0="%WebApplicationConfig%" GUID="c7bd4256-ef1f-44ea-b39c-a22bc437ace8" AlwaysEvaluate="True"/>
+                </Setting>
+              </Object>
+            </Object>
+          </Object>
+          <Object Type="Group" Name="Server Instance (Virtual Directory) Configuration">
+            <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="WebServerInstanceConfig">
+              <Setting Key1="WebServerInstanceConfig" Substitution="WebServerInstanceConfig"/>
+              <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="ClientServicesCredentialType_WebServer">
+                <Setting Key1="ClientServicesCredentialType_WebServer" Substitution="ClientServicesCredentialType_WebServer">
+                  <Rule Name="WebInstance_CorrectClientServicesCredentialType" Query="lower-case($.) != 'accesscontrolservice'" Error="Error" Title="Microsoft Dynamics NAV Web Server is not configured correctly for Single Sign-on with Office 365." Text="The web server instance configuration file '{0}' must have the 'ClientServicesCredentialType' parameter set to 'AccessControlService'. The current value is '{1}'." S0="%WebServerInstanceConfig%" S1="%ClientServicesCredentialType_WebServer%" GUID="c7bd4256-ef1f-44ea-b39c-a22bc437ace8"/>
+                </Setting>
+              </Object>
+              <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="ACSUri">
+                <Setting Key1="ACSUri" Substitution="ACSUri">
+                  <Rule Name="WebInstance_ValidACSUri" Query="not(matches(lower-case($.),'^https\://login\.windows\.net/[^/]+/wsfed\?wa=wsignin1.0%26wtrealm=(http|https)(\://|%3a%2f%2f).+$'))" Error="Error" Title="Microsoft Dynamics NAV Web Server is not configured correctly for Single Sign-on with Office 365." Text="The web server instance configuration file '{0}' must have the 'ACSUri' parameter set to a value that has the format 'https://login.windows.net/yourTenantId/wsfed?wa=wsignin1.0%26wtrealm=yourACSUrl'. The current value is '{1}'." S0="%WebServerInstanceConfig%" S1="%ACSUri%" GUID="c7bd4256-ef1f-44ea-b39c-a22bc437ace8"/>
+                </Setting>
+                <Object Type="If" Name="Extract AAD tenant identifier from Web Server configuration" Key1="'%ACSUri%' != ''">
+                  <Setting Key1="substring-after(substring-before(lower-case('%ACSUri%'), '/wsfed?'), 'https://login.windows.net/')" Substitution="AadTenantIdentifierWebServer"/>
+                  <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="AadTenantIdentifierWebServer" Key3="%AadTenantIdentifierWebServer%"/>
+                </Object>
+                <Object Type="If" Name="Extract AAD NAV applicaion realm from Web Server configuration" Key1="'%ACSUri%' != ''">
+                  <Setting Key1="substring-after(lower-case('%ACSUri%'), 'wtrealm=')" Substitution="AadNavApplicationRealm"/>
+                  <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="AadNavApplicationRealm" Key3="%AadNavApplicationRealm%"/>
+                </Object>
+              </Object>
+            </Object>
+          </Object>
+        </Object>
+      </Object>
+
+      <!--  Validate that the Office 365 tenant is correctly configured for Single Sign-on.  -->
+      <Object Type="Group" Name="Office 365 tenant">
+
+        <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ValidateServer">
+          <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ServerInstanceExists">
+            <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="CmdletMustValidateNavServer" Key3="1"/>
+          </Object>
+        </Object>
+        <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="ValidateWebServer">
+          <Object Type="Cache" Name="LocalCache" Key1="Dump" Key2="WebServerInstanceExists">
+            <Object Type="Cache" Name="LocalCache" Key1="AddValue" Key2="CmdletMustValidateNavWebServer" Key3="1"/>
+          </Object>
+        </Object>
+          
+        <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="CurrentBPADirectory">
+          <Setting Key1="CurrentBPADirectory" Substitution="CurrentBPADirectory"/>
+          <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="AadTenantIdentifierNavServer">
+            <Setting Key1="AadTenantIdentifierNavServer" Substitution="AadTenantIdentifierNavServer"/>
+            <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="AadTenantIdentifierWebServer">
+              <Setting Key1="AadTenantIdentifierWebServer" Substitution="AadTenantIdentifierWebServer"/>
+              <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="AadNavApplicationRealm">
+                <Setting Key1="AadNavApplicationRealm" Substitution="AadNavApplicationRealm"/>
+                <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="CmdletMustValidateNavServer">
+                  <Setting Key1="CmdletMustValidateNavServer" Substitution="CmdletMustValidateNavServer"/>
+                  <Object Type="Cache" Name="LocalCache" Key1="DumpValue" Key2="CmdletMustValidateNavWebServer">
+                    <Setting Key1="CmdletMustValidateNavWebServer" Substitution="CmdletMustValidateNavWebServer"/>
+                    <Object Type="Command" Key2="powershell" Key3="-ExecutionPolicy RemoteSigned -Command &quot;&amp; {. '%CurrentBPADirectory%\Scripts\O365Validation.ps1'; Get-NavOffice365StateForSSO -NavServerInstance '%Server Instance Name%' -NavTenantId '%Dynamics NAV Tenant%' -NavWebServerInstanceName '%Web Server Instance Name%' -AADTenantIdentifierNavServer '%AadTenantIdentifierNavServer%' -AADTenantIdentifierWebServer '%AadTenantIdentifierWebServer%' -ApplicationRealm '%AadNavApplicationRealm%' -Office365AdminUserName '%Office 365 User Account Email%' -ScriptResourceDirectory '%CurrentBPADirectory%\Scripts' -ValidateNavServer '%CmdletMustValidateNavServer%' -ValidateNavWebServer '%CmdletMustValidateNavWebServer%'}&quot;">
+                      <Setting Name="aadExecutable" Key1="Output" Key2="stderr" Key3="">
+                        <Rule Name="Aad_ApplicationNotConfigured" Query="$. != ''" Error="Error" Title="The Office 365 tenant is not configured correctly for Single Sign-on with Microsoft Dynamics NAV, or the Office 365 user was not found in the Microsoft Dynamics NAV database." Text="{0}" P0="$." GUID="3b88e48b-685c-4337-8891-4ed6d2db45a0"/>
+                        <Rule Name="Aad_ApplicationConfigured" Query="('%ValidateWebServer%' != '' or '%ValidateServer%' != '') and $. = ''" Error="None" Text="The Office 365 tenant is correctly configured for Single Sign-on with Microsoft Dynamics NAV and the Office 365 user is present in the Microsoft Dynamics NAV database."/>
+                      </Setting>
+                    </Object>
+                  </Object>
+                </Object>
+              </Object>
+            </Object>
+          </Object>
+        </Object>
+      </Object>
+    
+    </Object>
+
+  </Object>
+
+  <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+    <SignedInfo>
+      <CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+      <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+      <Reference URI="">
+        <Transforms>
+          <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+          <Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+        </Transforms>
+        <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+        <DigestValue>yfSgAvltfq7P4DHmUYLmOQQhKdk=</DigestValue>
+      </Reference>
+    </SignedInfo>
+    <SignatureValue>
+      ciZZxaGEV/v7o+Qe0guPE2V8+gl55Ar4z4XgRpic+TN0g8ojH5AiQ2oKdBFOQWU93gDcpsjV
+      crvkGtQdnb0VSjatQNj1aBaM2OiO9LQhyOTcktIJwgCfqVm/stFKJutdTAE9gzqvz1eIkQ2n
+      tBDxhqFqZXchJGJLHUYHAeByQ7dMeWH/P7WNDU88R74bPkwpxo3038uAyZ0mxFPY9MjHqxue
+      OeCp5uNpNSK5u7v6pY7ewpE8/5BaQSCZoh97JH7l+PGkZgizin/1DpOevNMwIHi7a9SxNOAE
+      CIFPpNLgxnhtXOFSu8co5UfVnQZVF17dkOWxkoo9mp/dUxd1yjrtPw==
+    </SignatureValue>
+    <KeyInfo>
+        <KeyValue>
+          <RSAKeyValue>
+            <Modulus>
+              kvxvNrvhA7ko1kbRomG6pUb7YxY+LvlH0sfs7ceZsSZRdb3azA8GFBGkbBmewF9NVInkTVDY
+              jc2hYaV3E5ocp+0NdPenVnnoKPdT0rF6Y+D1lJe37NlH+Gw98yWIs7wKxQSnjnyFSHYcYUaq
+              GcR6YovBwjWq+1hvxWMLk0kwgRt73398T7RHbV94HK+295YTUu+50U055XPeSE48FKqXDTnM
+              i1HhXNE78I5n6jBgqU1anUO92yO6wA/XSxCdnE3wUaKEquScpz3Wo+8KGEio+rFOpZgOS7/w
+              FPMAyLBI1lv+ONeJES0FukMCTyIAliWtfTVuhGirIBg4KP4cohCxpQ==
+            </Modulus>
+            <Exponent>AQAB</Exponent>
+          </RSAKeyValue>
+        </KeyValue>
+        <X509Data>
+          <X509Certificate>
+            MIIE7DCCA9SgAwIBAgITMwAAAQosea7XeXumrAABAAABCjANBgkqhkiG9w0BAQUFADB5MQsw
+            CQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwG
+            A1UEChMVTWljcm9zb2Z0IENvcnBvcmF0aW9uMSMwIQYDVQQDExpNaWNyb3NvZnQgQ29kZSBT
+            aWduaW5nIFBDQTAeFw0xNTA2MDQxNzQyNDVaFw0xNjA5MDQxNzQyNDVaMIGDMQswCQYDVQQG
+            EwJVUzETMBEGA1UECBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMV
+            TWljcm9zb2Z0IENvcnBvcmF0aW9uMQ0wCwYDVQQLEwRNT1BSMR4wHAYDVQQDExVNaWNyb3Nv
+            ZnQgQ29ycG9yYXRpb24wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCS/G82u+ED
+            uSjWRtGiYbqlRvtjFj4u+UfSx+ztx5mxJlF1vdrMDwYUEaRsGZ7AX01UieRNUNiNzaFhpXcT
+            mhyn7Q1096dWeego91PSsXpj4PWUl7fs2Uf4bD3zJYizvArFBKeOfIVIdhxhRqoZxHpii8HC
+            Nar7WG/FYwuTSTCBG3vff3xPtEdtX3gcr7b3lhNS77nRTTnlc95ITjwUqpcNOcyLUeFc0Tvw
+            jmfqMGCpTVqdQ73bI7rAD9dLEJ2cTfBRooSq5JynPdaj7woYSKj6sU6lmA5Lv/AU8wDIsEjW
+            W/4414kRLQW6QwJPIgCWJa19NW6EaKsgGDgo/hyiELGlAgMBAAGjggFgMIIBXDATBgNVHSUE
+            DDAKBggrBgEFBQcDAzAdBgNVHQ4EFgQUif4KMeomzeZtx5GRuZSMohhhNzQwUQYDVR0RBEow
+            SKRGMEQxDTALBgNVBAsTBE1PUFIxMzAxBgNVBAUTKjMxNTk1KzA0MDc5MzUwLTE2ZmEtNGM2
+            MC1iNmJmLTlkMmIxY2QwNTk4NDAfBgNVHSMEGDAWgBTLEejK0rQWWAHJNy4zFha5TJoKHzBW
+            BgNVHR8ETzBNMEugSaBHhkVodHRwOi8vY3JsLm1pY3Jvc29mdC5jb20vcGtpL2NybC9wcm9k
+            dWN0cy9NaWNDb2RTaWdQQ0FfMDgtMzEtMjAxMC5jcmwwWgYIKwYBBQUHAQEETjBMMEoGCCsG
+            AQUFBzAChj5odHRwOi8vd3d3Lm1pY3Jvc29mdC5jb20vcGtpL2NlcnRzL01pY0NvZFNpZ1BD
+            QV8wOC0zMS0yMDEwLmNydDANBgkqhkiG9w0BAQUFAAOCAQEApqhTkd87Af5hXQZa62bwDNj3
+            2YTTAFEOENGk0Rco54wzOCvYQ8YDi3XrM5L0qeJn/QLbpR1OQ0VdG0nj4E8W8H6P8IgRyoKt
+            pPumqV/1l2DIe8S/fJtp7R+CwfHNjnhLYvXXDRzXUxLWllLvNb0ZjqBAk6EKpS0WnMJGdAjr
+            2/TYpUk2VBIRVQOzexb7R/77aPzARVziPxJ5M6LvgsXeQBkH7hXFCptZBUGp0JeegZ4DW/xK
+            4xouBaxQRy+M+nnYHiD4BfspaxgU+nIEtwunmmTsEV1PRUmNKRot+9C2CVNfNJTgFsS56nM1
+            6Ffv4esWwxjHBrM7z2GE4rZEiZSjhg==
+          </X509Certificate>
+        </X509Data>
+        <X509Data>
+          <X509Certificate>
+            MIIFmTCCA4GgAwIBAgIQea0WoUqgpa1Mc1j0BxMuZTANBgkqhkiG9w0BAQUFADBfMRMwEQYK
+            CZImiZPyLGQBGRYDY29tMRkwFwYKCZImiZPyLGQBGRYJbWljcm9zb2Z0MS0wKwYDVQQDEyRN
+            aWNyb3NvZnQgUm9vdCBDZXJ0aWZpY2F0ZSBBdXRob3JpdHkwHhcNMDEwNTA5MjMxOTIyWhcN
+            MjEwNTA5MjMyODEzWjBfMRMwEQYKCZImiZPyLGQBGRYDY29tMRkwFwYKCZImiZPyLGQBGRYJ
+            bWljcm9zb2Z0MS0wKwYDVQQDEyRNaWNyb3NvZnQgUm9vdCBDZXJ0aWZpY2F0ZSBBdXRob3Jp
+            dHkwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQDzXfqAZ9Rap6kMLJAg0DUIPHWE
+            zbcHiZyJ2t7Ow2D6kWhanpRxKRh2fMLgyCV2lA5Y+gQ0Nubfr/eAuulYCyuT5Z0F43cikfc0
+            ZDwikR1e4QmQvBT+/HVYGeF5tweSo66IWQjYnwfKA1j8aCltMtfSqMtL/OELSDJP5uu4rU/k
+            XG8TlJnbldV126gat5SRtHdb9UgMj2p5fRRwBH1tr5D12nDYR7e/my9s5wW34RFgrHmRFHzF
+            1qbk4X7Vw37lktI8ALU2gt554W3ztW74nzPJy1J9c5g224uha6KVl5uj3sJNJv8GlmclBsjn
+            rOTuEjOVMZnINQhONMp5U9W1vmMyWUA2wKVOBE0921sHM+RYv+8/U2TYQlk1V/0PRXwkBE2e
+            1jh0EZcikM5oRHSSb9VLb7CG48c2QqDQ/MHAWvmjYbkwR3GWChawkcBCle8Qfyhq4yofseTN
+            Az93cQTHIPxJDx1FiKTXy36IrY4t7EXbxFEEySr87IaemhGXW97OU4jm4rf9rJXCKEDb7wSQ
+            34EzOdmyRaUjhwalVYkxuwYtYA5BGH0fLrWXyxHrFdUkpZTvFRSJ/Utz+jJb/NEzAPlZYnAH
+            Muouq0Ate8rdIWcbMJmPFqojqEHRsG4RmzbE3kB0nOFYZcFgHnpbOMiPuwQmfNQWQOW2a2yq
+            hv0Av87BNQIDAQABo1EwTzALBgNVHQ8EBAMCAcYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4E
+            FgQUDqyCYEBWJ5flJRP8KuEKU5VZ5KQwEAYJKwYBBAGCNxUBBAMCAQAwDQYJKoZIhvcNAQEF
+            BQADggIBAMURTQM6YN1dUhF3j7K7NsiyBb+0t6jYIJ1cEwO2HCL6BhM1tshj1JpHbyZX0lXx
+            BLEmX9apUGigvNK4bszD6azfGc14rFl0rGY0NsQbPmw4TDMOMBINoyb+UVMA/69aToQNDx/k
+            bQUuToVLjWwzb1TSZKu/UK99ejmgN+1jAw/8EwbOFjbUVDuVG1FiOuVNF9QFOZKaJ6hbqr3s
+            u77jIIlgcWxWs6UT0G0OI36VA+1oPfLYY7hrTbboMLXhypRL96KqXZkwsj2nwlFsKCABJCcr
+            SwC3nRFrcL6yEIK8DJto0I07JIeqmShynTNfWZC99d6TnjpiWjQ54ohVHbkGsMGJay3XacMZ
+            EjaE0Mmg2v8vaXiy5Xra69cMwPe9Yxe4ORM4ojZbe/KFVmodZGLBOOKqv1FmopT1EpxmIhBr
+            8rcwki3yKfA9OxRDaKLxnCk3y844ICVtfGfzfiQSJAMIgUfspZ6X9RjXz7vV73aW7/3O21ad
+            laBC+ZdY4dcxItNfWeY+biIA6kOEtiXb2fMIVmjAZGsdfOy2k6JiV24u2OdYj8QxSSbd3ik1
+            h/UwcXBbFDxpvYkSfesuo/7Yf56CWlIKK8FDK9kwiJ/IEPuJjeahhXUzfmye23MTZGJppS99
+            ypZtn/gETTCSPW4hFCHJPeDD/YprnUr90aGdmUN3P7Da
+          </X509Certificate>
+        </X509Data>
+        <X509Data>
+          <X509Certificate>
+            MIIFvDCCA6SgAwIBAgIKYTMmGgAAAAAAMTANBgkqhkiG9w0BAQUFADBfMRMwEQYKCZImiZPy
+            LGQBGRYDY29tMRkwFwYKCZImiZPyLGQBGRYJbWljcm9zb2Z0MS0wKwYDVQQDEyRNaWNyb3Nv
+            ZnQgUm9vdCBDZXJ0aWZpY2F0ZSBBdXRob3JpdHkwHhcNMTAwODMxMjIxOTMyWhcNMjAwODMx
+            MjIyOTMyWjB5MQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMH
+            UmVkbW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBvcmF0aW9uMSMwIQYDVQQDExpNaWNy
+            b3NvZnQgQ29kZSBTaWduaW5nIFBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+            ALJyWVwZMGS/HZpgICBCmXZTbD4b1m/My/Hqa/6XFhDg3zp0gxq3L6Ay7P/ewkJOI9VyANs1
+            VwqJyq4gSfTwaKxNS42lvXlLcZtHB9r9Jd+ddYjPqnNEf9eB2/O98jakyVxF3K+tPeAoaJca
+            p6Vyc1bxF5Tk/TWUcqDWdl8ed0WDhTgW0HNbBbpnUo2lsmkv2hkL/pJ0KeJ2L1TdFDBZ+NKN
+            Yv3LyV9GMVC5JxPkQDDPcikQKCLHN049oDI9kM2hOAaFXE5WgigqBTK3S9dPY+fSLWLxRT3n
+            rAgA9kahntFbjCZT6HqqSvJGzzc8OJ60d1ylF56NyxGPVjzBrAlfA9MCAwEAAaOCAV4wggFa
+            MA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFMsR6MrStBZYAck3LjMWFrlMmgofMAsGA1Ud
+            DwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBT90TFO0yaKleGY
+            YDuoMW+mPLzYLTAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQOrIJg
+            QFYnl+UlE/wq4QpTlVnkpDBQBgNVHR8ESTBHMEWgQ6BBhj9odHRwOi8vY3JsLm1pY3Jvc29m
+            dC5jb20vcGtpL2NybC9wcm9kdWN0cy9taWNyb3NvZnRyb290Y2VydC5jcmwwVAYIKwYBBQUH
+            AQEESDBGMEQGCCsGAQUFBzAChjhodHRwOi8vd3d3Lm1pY3Jvc29mdC5jb20vcGtpL2NlcnRz
+            L01pY3Jvc29mdFJvb3RDZXJ0LmNydDANBgkqhkiG9w0BAQUFAAOCAgEAWTk+fyZGr+tvQLEy
+            tWrrDi9uqEn361917Uw7LddDrQv+y+ktMaMjzHxQmIAhXaw9L0y6oqhWnONwu7i0+Hm1SXL3
+            PupBf8rhDBdpy6WcIC36C1DEVs0t40rSvHDnqA2iA6VW4LiKS1fylUKc8fPv7uOGHzQ8uFaa
+            8FMjhSqkghyT4pQHHfLiTviMocroE6WRTsgb0o9ylSpxbZsa+BzwU9ZnzCL/XB3Nooy9J7J5
+            Y1ZEolHN+emjWFbdmwJFRC9f9Nqu1IIybvyklRPk62nnqaIsvsgrEA5ljpnb9aL6EiYJZTiU
+            8XofSrvR4Vbo0HiWGFzJNRZf3ZMdSY4tvq00RBzuEBUaAF3dNVshzpjHCe6FDoxPbQ4TTj18
+            KUicctHzbMrB7HCjV5JXfZSNoBtIA1r3z6NnCnSlNu0tLxfI5nI3EvRvsTxngvlSso0zFmUe
+            DordEN5k9G/ORtTTF+l5xAS00/ss3x+KnqwK+xMnQK3k+eGpf0a7B2BHZWBATrBC7E7ts3Z5
+            2Ao0CW0cgDEf4g5U3eWh++VHEK1kmP9QFi58vwUheuKVQSdpw5OPlcmN2Jshrg1cnPCiroZo
+            gwxqLbt2awAdlq3yFnv2FoMkuYjPaqhHMS+a3ONxPdcAfmJH0c6IybgY+g5yjcGjPa8CQGr/
+            aZuW4hCoELQ3UAjWwz0=
+          </X509Certificate>
+        </X509Data>
+      </KeyInfo>
+    
+  <Object id="ts-countersig"><X509Data><X509Certificate>MIIEwzCCA6ugAwIBAgITMwAAAHQNgGQOfWd9owAAAAAAdDANBgkqhkiG9w0BAQUFADB3MQswCQYD
+VQQGEwJVUzETMBEGA1UECBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMV
+TWljcm9zb2Z0IENvcnBvcmF0aW9uMSEwHwYDVQQDExhNaWNyb3NvZnQgVGltZS1TdGFtcCBQQ0Ew
+HhcNMTUwMzIwMTczMjA1WhcNMTYwNjIwMTczMjA1WjCBszELMAkGA1UEBhMCVVMxEzARBgNVBAgT
+Cldhc2hpbmd0b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3Jh
+dGlvbjENMAsGA1UECxMETU9QUjEnMCUGA1UECxMebkNpcGhlciBEU0UgRVNOOjdEMkUtMzc4Mi1C
+MEY3MSUwIwYDVQQDExxNaWNyb3NvZnQgVGltZS1TdGFtcCBTZXJ2aWNlMIIBIjANBgkqhkiG9w0B
+AQEFAAOCAQ8AMIIBCgKCAQEA4NFrifjVvo5YgN/jD+4M6zszXn3GnmZHP9AerBSCDRiftpwnIvG2
+hpREQXSJkW8X9t+Y5jbLX3iS6XJ+S7kExWIUc3HGf2NBW+tk8r1cVWJGzA9ewQnEr9nxvyV94Beg
+UO4lqkXl48Z+vxBZqcGPPtn77GQbY1u1p7jq681X6xtD9WWRv1D1+cEGvH2qzDfnBqmgzLH1M8wN
+ssh1ZgDRbTCTR8+OomdEXhoTf/McHucPncG8SPyBgW1UauJpE8bO9ZdnMmxIyhHCVjrW3Dpi9PwQ
+l2RIC4pc8RbClfDLYBukA5sMyfe7kr8Ac2czHKJ673VKGUZaDH6aW6A6HVQ16wIDAQABo4IBCTCC
+AQUwHQYDVR0OBBYEFCUsOGYFtEU5DmC29u69PuDdr4wNMB8GA1UdIwQYMBaAFCM0+NlSRnAK7UD7
+dvuzK7DDNbMPMFQGA1UdHwRNMEswSaBHoEWGQ2h0dHA6Ly9jcmwubWljcm9zb2Z0LmNvbS9wa2kv
+Y3JsL3Byb2R1Y3RzL01pY3Jvc29mdFRpbWVTdGFtcFBDQS5jcmwwWAYIKwYBBQUHAQEETDBKMEgG
+CCsGAQUFBzAChjxodHRwOi8vd3d3Lm1pY3Jvc29mdC5jb20vcGtpL2NlcnRzL01pY3Jvc29mdFRp
+bWVTdGFtcFBDQS5jcnQwEwYDVR0lBAwwCgYIKwYBBQUHAwgwDQYJKoZIhvcNAQEFBQADggEBAEEG
+50j6xJHcMBMNInjC0iPTszPL+yYh1978CncY+4Nyzu/ULIaP4xXj1RICZ1xbN9MDe02RW0FTZgn9
+457fLHgJORo2HYqBocllfJx7kbIPSptB3cdEC2EFyUwu8rRrKKoIR+4IrGZUF1aQiMbpddAhEDh5
+yT+7VTDFpjmmU7/NXFbSThcUvGISy+lL8MWR3J2EypjWDttWFGht21OLMM+6J2V1oDFvk6N1EGDq
+qu7uduvljAup0655zzS+SR8i0MT1o+/zrjDcjohGI4ygqjyXrwfbdug2VN+Ls4mewOospGBr8d/D
+thI6rzM4elFxNTXm5AjiUZaC+b7hG4N8e2c=</X509Certificate></X509Data><X509Data><X509Certificate>MIIGBzCCA++gAwIBAgIKYRZoNAAAAAAAHDANBgkqhkiG9w0BAQUFADBfMRMwEQYKCZImiZPyLGQB
+GRYDY29tMRkwFwYKCZImiZPyLGQBGRYJbWljcm9zb2Z0MS0wKwYDVQQDEyRNaWNyb3NvZnQgUm9v
+dCBDZXJ0aWZpY2F0ZSBBdXRob3JpdHkwHhcNMDcwNDAzMTI1MzA5WhcNMjEwNDAzMTMwMzA5WjB3
+MQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwG
+A1UEChMVTWljcm9zb2Z0IENvcnBvcmF0aW9uMSEwHwYDVQQDExhNaWNyb3NvZnQgVGltZS1TdGFt
+cCBQQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCfoWyx39tIkip8ay4Z4b3i48WZ
+USNQrc7dGE4kD+7Rp9FMrXQwIBHrB9VUlRVJlBtCkq6YXDAm2gBr6Hu97IkHD/cOBJjwicwfyzMk
+h53y9GccLPx754gd6udOo6HBI1PKjfpFzwnQXq/QsEIEovmmbJNn1yjcRlOwhtDlKEYuJ6yGT1VS
+DOQDLPtqkJAwbofzWTCd+n7Wl7PoIZd++NIT8wi3U21StEWQn0gASkdmEScpZqiX5NMGgUqi+YSn
+EUcUCYKfhO1VeP4Bmh1QCIUAEDBG7bfeI0a7xC1Un68eeEExd8yb3zuDk6FhArUdDbH895uyAc4i
+S1T/+QXDwiALAgMBAAGjggGrMIIBpzAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBQjNPjZUkZw
+Cu1A+3b7syuwwzWzDzALBgNVHQ8EBAMCAYYwEAYJKwYBBAGCNxUBBAMCAQAwgZgGA1UdIwSBkDCB
+jYAUDqyCYEBWJ5flJRP8KuEKU5VZ5KShY6RhMF8xEzARBgoJkiaJk/IsZAEZFgNjb20xGTAXBgoJ
+kiaJk/IsZAEZFgltaWNyb3NvZnQxLTArBgNVBAMTJE1pY3Jvc29mdCBSb290IENlcnRpZmljYXRl
+IEF1dGhvcml0eYIQea0WoUqgpa1Mc1j0BxMuZTBQBgNVHR8ESTBHMEWgQ6BBhj9odHRwOi8vY3Js
+Lm1pY3Jvc29mdC5jb20vcGtpL2NybC9wcm9kdWN0cy9taWNyb3NvZnRyb290Y2VydC5jcmwwVAYI
+KwYBBQUHAQEESDBGMEQGCCsGAQUFBzAChjhodHRwOi8vd3d3Lm1pY3Jvc29mdC5jb20vcGtpL2Nl
+cnRzL01pY3Jvc29mdFJvb3RDZXJ0LmNydDATBgNVHSUEDDAKBggrBgEFBQcDCDANBgkqhkiG9w0B
+AQUFAAOCAgEAEJeKw1wDRDbd6bStd9vOeVFNAbEudHFbbQwTq86+e4+4LtQSooxtYrhXAstOIBNQ
+md16QOJXu69YmhzhHQGGrLt48ovQ7DsB7uK+jwoFyI1I4vBTFd1Pq5Lk541q1YDB5pTyBi+FA+mR
+KiQicPv2/OR4mS4N9wficLwYTp2OawpylbihOZxnLcVRDupiXD8WmIsgP+IHGjL5zDFKdjE9K3IL
+yOpwPf+FChPfwgphjvDXuBfrTot/xTUrXqO/67x9C0J71FNyIe4wyrt4ZVxbARcKFA7S2hSY9Ty5
+ZlizLS/n+YWGzFFW6J1wlGysOUzU9nm/qhh6YinvopspNAZ3GmLJPR5tH4LwC8csu89Ds+X57H21
+46SodDW4TsVxIxImdgs8UoxxWkZDFLyzs7BNZ8ifQv+AeSGAnhUwZuhCEl4ayJ4iIdBD6Svpu/RI
+zCzU2DKATCYqSCRfWupW76bemZ3KOm+9gSd0BhHudiG/m4LBJ1S2sWo9iaF2YbRuoROmv6pH8BJv
+/YoybLL+31HIjCPJZr2dHYcSZAI9La9Zj7jkIeW1sMpjtHhUBdRBLlCslLCleKuzoJZ1GtmShxN1
+Ii8yqAhuoFuMJb+g74TKIdbrHk/Jmu5J4PcBZW+JC33Iacjmbuqnl84xKf8OxVtc2E0bodj6L54/
+LlUWa8kTo/0=</X509Certificate></X509Data><CounterSignature xmlns="http://schemas.microsoft.com/xmldsig/timestamp/2003" ts-format="cms-timestamp-message">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</CounterSignature></Object></Signature>
+</ObjectCollector>

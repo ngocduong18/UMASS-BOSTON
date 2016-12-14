@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<asmv1:assembly xsi:schemaLocation="urn:schemas-microsoft-com:asm.v1 assembly.adaptive.xsd" manifestVersion="1.0" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:co.v1="urn:schemas-microsoft-com:clickonce.v1" xmlns:co.v2="urn:schemas-microsoft-com:clickonce.v2" xmlns="urn:schemas-microsoft-com:asm.v2" xmlns:asmv1="urn:schemas-microsoft-com:asm.v1" xmlns:asmv2="urn:schemas-microsoft-com:asm.v2" xmlns:xrml="urn:mpeg:mpeg21:2003:01-REL-R-NS" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <!-- TODO: Change the assemblyIdentity's name so it is unique for your particular deployment (URL). This is really the identity of your particular deployment. -->
+  <assemblyIdentity name="Microsoft Dynamics NAV 2016 - INSERT ANY UNIQUE AND STABLE DEPLOYMENT DIFFERENTIATOR HERE" version="9.0.0.0" publicKeyToken="0000000000000000" language="neutral" processorArchitecture="msil" xmlns="urn:schemas-microsoft-com:asm.v1" />
+  <!-- TODO: Change the publisher and product as you see fit. The publisher should have the format "Microsoft Corporation and xxx". The product name should have the format "Microsoft Dynamics NAV 2016 xxx". -->
+  <description asmv2:publisher="Microsoft Corporation and INSERT PARTNER NAME HERE" asmv2:product="Microsoft Dynamics NAV 2016 for INSERT E.G. CUSTOMER NAME HERE" xmlns="urn:schemas-microsoft-com:asm.v1" />
+  <deployment install="true" minimumRequiredVersion="9.0.0.0">
+    <subscription>
+      <update>
+        <beforeApplicationStartup />
+      </update>
+    </subscription>
+    <!-- TODO: Change the deploymentProvider codebase to point to the file share or web site where this deployment manifest file will get deployed. -->
+    <deploymentProvider codebase="\\fileshare\clickonce\Deployment\Microsoft.Dynamics.Nav.Client.application" />
+  </deployment>
+  <compatibleFrameworks xmlns="urn:schemas-microsoft-com:clickonce.v2">
+    <framework targetVersion="4.5" profile="Full" supportedRuntime="4.0.30319" />
+  </compatibleFrameworks>
+  <dependency>
+    <!-- TODO: Change the dependentAssembly's codebase to point to the file share or web site where the application manifest file is deployed. -->
+    <dependentAssembly dependencyType="install" codebase="\\fileshare\clickonce\Deployment\ApplicationFiles\Microsoft.Dynamics.Nav.Client.exe.manifest" size="51979">
+      <assemblyIdentity name="Microsoft.Dynamics.Nav.ClickOnceClient" version="9.0.0.0" publicKeyToken="0000000000000000" language="neutral" processorArchitecture="msil" type="win32" />
+    </dependentAssembly>
+  </dependency>
+</asmv1:assembly>
